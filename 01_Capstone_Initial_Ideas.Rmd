@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
   
   
-###Diabetes Insulin & Glucose Management  
+### Diabetes Insulin & Glucose Management  
 
 __PROBLEM__: Diabetics need to maintain blood glucose levels (BGL) within a designated range. Excessive high levels lead to long-term organ damage. Excessive lows run the more immediate risks of coma or death.
 
@@ -23,7 +23,7 @@ __DATA SOURCE__:
 <https://archive.ics.uci.edu/ml/datasets/diabetes>  
   
 
-###Murder-Suicide Predictors & Prevention  
+### Murder-Suicide Predictors & Prevention  
 
 __PROBLEM__: Many homicides are committed by individuals who then commit suicide. The problem is most notable in mass shooting incidents. A more common aspect, however, involves family members who shoot their spouses and/or children prior to taking their own lives.
 
@@ -39,7 +39,7 @@ __DATA SOURCES__:
 <http://lawcenter.giffords.org>  
   
 
-###College Towns and Home Value Growth  
+### College Towns and Home Value Growth  
 
 __PROBLEM__: Does the presence of higher education institutions drive above-average home value growth? Does the rank of the institution influence this effect if it exists?
 
