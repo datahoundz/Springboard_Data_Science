@@ -1,0 +1,31 @@
+---
+title: "Capstone Project Proposal"
+author: "Jim Scotland"
+date: "February 22, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Firearm Suicide Awareness and Prevention  
+  
+__PROBLEM__  
+__The individual most likely to kill a gun owner is …himself.__ In the ongoing discussions of mass shootings and gun regulation, few address this less newsworthy fact. The CDC reports that 37,353 people were killed by firearms in 2016. Suicides, at 22,938, made up over 60% of those deaths. In 42 states an individual is more likely to kill themselves with a gun than to be shot dead by an assailant. The greatest risk to a gun owner is his own gun.  
+
+__AUDIENCE__  
+This project seeks to inform all participants in the public discussion of gun violence and gun control legislation: politicians, advocacy groups, journalists, health professionals, law enforcement agents and the general public – particularly those with firearms in their home.  
+
+__CALL TO ACTION__  
+Adopt legal and public health strategies to reduce this public health crisis. Allow medical professionals to ask patients if they own a gun. Allow family members, work associates and friends to identify gun owners they fear may harm themselves. Establish waiting periods on gun purchases to delay the period between impulse and action. Develop more robust systems for flagging high-risk individuals and enforcing gun possession limitations. Allow government funded research into the public health risks associated with firearm ownership.  
+
+__DATA__  
+This analysis will utilize mortality data from the [Centers for Disease Control and Prevention](https://wonder.cdc.gov/), gun law data from the [Giffords Law Center](http://lawcenter.giffords.org/) and the [Boston University School of Public Health](https://www.statefirearmlaws.org/index.html), and possibly demographic data from the U.S. Census Bureau’s annual [American Community Survey](https://www.census.gov/acs/www/data/data-tables-and-tools/data-profiles/2016/). All data is available for download online.  
+
+__APPROACH__  
+Establish connections between gun ownership rates and levels of suicide by firearm. Address the impact of gun control laws on firearm suicides. Explore regional variations regarding gun ownership, gun control laws and firearm suicides. Analyze specific categories of gun legislation and their effect on firearm suicides. Utilize machine learning linear regression tools to identify variables most highly correlated with firearm suicides. Consider applying cluster analysis to investigate how states group together based upon ownership, legislation and suicide rates. Pursue potential demographic drivers of firearm suicide risk.  
+
+__DELIVERABLES__  
+A paper and slide deck produced using RMarkdown laying out the problem, the analysis, conclusions and proposed areas of action. The paper, slide deck and all supporting code will be made available in a [GitHub repository](https://github.com/datahoundz/Springboard_Data_Science). Upon completion of the capstone project, I intend to develop interactive ShinyApp graphs and Tableau visualizations that individuals and groups could access to explore the data independently.  
+
