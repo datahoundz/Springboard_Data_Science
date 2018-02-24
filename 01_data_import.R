@@ -13,6 +13,9 @@ library(lubridate)
 # 
 # =======================================================================
 
+# Data accessed at
+# https://wonder.cdc.gov/
+
 # Import CDC Suicide Data (cleaned version with additional footer data deleted) 
 suicides_df <- read_tsv("data_cleaned/CDC_FirearmSuicide_1999-2016.txt")
 
@@ -21,13 +24,13 @@ head(suicides_df)
 
 # Remove duplicate/empty columns, make Rate numeric
 suicides_df$Notes <- NULL
+suicides_df$'State Code' <- NULL
 suicides_df$'Year Code' <- NULL
 suicides_df$`Crude Rate` <- as.numeric(suicides_df$`Crude Rate`)
 
 # Standardize and sepcify variable names (plan to merge w/ homicide data)
 suicides_df <- suicides_df %>%
   rename(state = State) %>%
-  rename(st_code = 'State Code') %>%
   rename(year = Year) %>%
   rename(sui_cnt = Deaths) %>%
   rename(sui_pop = Population) %>%
@@ -55,12 +58,12 @@ homicides_df <- read_tsv("data_cleaned/CDC_FirearmHomicide_1999-2016.txt")
 head(homicides_df)
 
 homicides_df$Notes <- NULL
+homicides_df$'State Code' <- NULL
 homicides_df$'Year Code' <- NULL
 homicides_df$`Crude Rate` <- as.numeric(homicides_df$`Crude Rate`)
 
 homicides_df <- homicides_df %>%
   rename(state = State) %>%
-  rename(st_code = 'State Code') %>%
   rename(year = Year) %>%
   rename(hom_cnt = Deaths) %>%
   rename(hom_pop = Population) %>%
@@ -85,17 +88,17 @@ summary(homicides_df)
 
 # Modify process to adjust for population data
 
-# Import CDC Population Data (baseline for combining suicide/homicide data)
+# Import CDC Population Data (baseline for joining suicide/homicide data)
 population_df <- read_tsv("data_cleaned/CDC_PopEst_1990-2016.txt")
 head(population_df)
 
 # Similar adjustments for population table
 population_df$Notes <- NULL
 population_df$`Yearly July 1st Estimates Code` <- NULL
+population_df$`State Code` <- NULL
 
 population_df <- population_df %>%
   rename(state = State) %>%
-  rename(st_code = 'State Code') %>%
   rename(year = `Yearly July 1st Estimates`) %>%
   rename(pop = Population)
   
@@ -109,3 +112,164 @@ population_df <- population_df %>%
 # Check results
 head(population_df)
 summary(population_df)
+
+# =======================================================================
+# 
+# Data Merge - CDC Suicides, CDC Homicides, CDC Population
+# 
+# =======================================================================
+
+# Create standard join key variable for most common table join 
+join_key <- c("state", "year")
+
+# Join Population base table w/ homicides and suicides tables
+gun_deaths_df <- left_join(population_df, homicides_df, by = join_key) %>%
+  left_join(suicides_df, by = join_key) %>%
+  select(-hom_pop, -sui_pop)
+
+# Check results
+head(gun_deaths_df)
+summary(gun_deaths_df)
+
+# Need to address 91 NA's in Homicide and HomicideRate and 6 NA's in Suicide & Suicide Rate
+# Select list of States w/ NA in Homicides
+# Calculate Min-Max-Mean for each State w/ NA to guide interpolation
+gun_deaths_df %>%
+  filter(is.na(hom_cnt)) %>%
+  select(state) %>%
+  unique() %>%  
+  left_join(gun_deaths_df, by = "state") %>%
+  group_by(state) %>%
+  summarise(min = min(hom_cnt, na.rm = TRUE), max = max(hom_cnt, na.rm = TRUE), mean = mean(hom_cnt, na.rm = TRUE))
+
+# Results suggest using mean to replace missing values
+
+# Repeat for Suicide data
+gun_deaths_df %>%
+  filter(is.na(sui_cnt)) %>%
+  select(state) %>%
+  unique() %>%
+  left_join(gun_deaths_df, by = "state") %>%
+  group_by(state) %>%
+  summarise(min = min(sui_cnt, na.rm = TRUE), max = max(sui_cnt, na.rm = TRUE), mean = mean(sui_cnt, na.rm = TRUE))
+
+# Again the mean looks like the best replacement value
+
+# Replace NA in Suicides/Homicides with Mean for respective State
+# Calculate hom_rate and sui_rate to replace NA values 
+gun_deaths_df <- gun_deaths_df %>%
+  group_by(state) %>%
+  mutate(hom_cnt = ifelse(is.na(hom_cnt), as.integer(mean(hom_cnt, na.rm = TRUE)), hom_cnt)) %>%
+  mutate(sui_cnt = ifelse(is.na(sui_cnt), as.integer(mean(sui_cnt, na.rm = TRUE)), sui_cnt)) %>%
+  mutate(hom_rate = ifelse(is.na(hom_rate), round(hom_cnt / pop * 100000, 1), hom_rate)) %>% 
+  mutate(sui_rate = ifelse(is.na(sui_rate), round(sui_cnt / pop * 100000, 1), sui_rate))
+
+# Check results
+summary(gun_deaths_df)
+
+
+# =======================================================================
+# 
+# Import Region/Subregion data to join on State for higher level analysis
+# 
+# =======================================================================
+
+# Regional data tables accessed at
+# https://www2.census.gov/geo/docs/maps-data/maps/reg_div.txt
+
+regions_df <- read_excel("data_cleaned/State_FIPS_Codes.xlsx")
+
+# Check data
+head(regions_df)
+
+# Convert code fields to integer
+regions_df$fips_st <- as.integer(regions_df$fips_st)
+regions_df$reg_code <- as.integer(regions_df$reg_code)
+regions_df$subreg_code <- as.integer(regions_df$subreg_code)
+
+# Create region and subregion fields w/ code+name for sorting/labeling purposes
+regions_df <- regions_df %>%
+  unite(region, reg_code, reg_name, sep = "-", remove = FALSE) %>%
+  unite(subregion, subreg_code, subreg_name, sep = "-", remove = FALSE)
+
+# Check results
+head(regions_df)
+summary(regions_df)
+
+
+# =======================================================================
+# 
+# Import Boston University School of Public Health Gun Law Data
+# 
+# =======================================================================
+
+# Data accessed at
+# https://www.statefirearmlaws.org/table.html
+
+state_laws_df <- read.csv("data_cleaned/state_gun_law_database.csv")
+state_codes_df <- read_xlsx("data_cleaned/state_gun_laws_codebook.xlsx")
+
+head(state_laws_df)
+str(state_laws_df)
+
+head(state_codes_df)
+str(state_codes_df)
+
+
+
+# Clean up category names in State Firearm Codes
+state_codes_df <- state_codes_df %>%
+  select(cat_code = `Category Code`, cat = Category, sub_cat = `Sub-Category`, var_name = `Variable Name`)
+
+# Filter state law data for 1999-2016 period only
+state_laws_df <- state_laws_df %>%
+  filter(year >= 1999 & year <= 2016)
+
+# Address issues related to large number of variables in state_laws_df
+
+# View category names for var_name lookup
+unique(state_codes_df$cat)
+
+# Use code below to generate var_name by cat for mutate below
+state_codes_df %>%
+  filter(cat == "Buyer regulations") %>%
+  select(var_name)
+
+# Collapse individual variables in to larger category groupings
+laws_cat_df <- state_laws_df %>%
+  mutate(deal_reg = dealer + dealerh + recordsall + recordsdealerh + recordsall + 
+           reportdealer + reportdealerh + reportall + reportallh + purge + residential + 
+           theft + security + inspection + liability + junkgun) %>%
+  mutate(buy_reg = waiting + waitingh + permit + permith + permitlaw + fingerprint +
+           training + registration + registrationh + defactoreg + defactoregh + age21handgunsale + 
+           age18longgunsale + age21longgunsale + age21longgunsaled + loststolen + onepermonth) %>%
+  mutate(high_risk = felony + violent + violenth + violentpartial + invcommitment + 
+           invoutpatient + danger + drugmisdemeanor + alctreatment + alcoholism) %>%
+  mutate(bkgrnd_chk = universal + universalh + gunshow + gunshowh + universalpermit + universalpermith + 
+           backgroundpurge + threedaylimit + mentalhealth + statechecks + statechecksh) %>%
+  mutate(ammo_reg = ammlicense + ammrecords + ammpermit + ammrestrict + amm18 +
+           amm21h + ammbackground) %>%
+  mutate(poss_reg = age21handgunpossess + age18longgunpossess + age21longgunpossess + 
+           gvro + gvrolawenforcement + college + collegeconcealed + elementary + opencarryh +
+           opencarryl + opencarrypermith + opencarrypermitl) %>%
+  mutate(conceal_reg = permitconcealed + mayissue + showing + ccrevoke + ccbackground +
+           ccbackgroundnics + ccrenewbackground) %>%
+  mutate(assault_mag = assault + onefeature + assaultlist + assaultregister + assaulttransfer +
+           magazine + tenroundlimit + magazinepreowned) %>%
+  mutate(child_acc = lockd + lockp + lockstandards + locked + capliability + capaccess +
+           capuses + capunloaded + cap18 + cap16 + cap14) %>%
+  mutate(gun_traff = traffickingbackground + traffickingprohibited + traffickingprohibitedh +
+           strawpurchase + strawpurchaseh + microstamp + personalized) %>%
+  mutate(stnd_grnd = nosyg) %>%
+  mutate(pre_empt = preemption + preemptionbroad + preemptionnarrow) %>%
+  mutate(immunity_ = immunity) %>%
+  mutate(dom_viol = mcdv + mcdvdating + mcdvsurrender + mcdvsurrendernoconditions +
+           mcdvsurrenderdating + mcdvremovalallowed + mcdvremovalrequired + incidentremoval +
+           incidentall + dvro) %>%
+  select(state, year, contains("_"))
+
+head(laws_cat_df)
+summary(laws_cat_df)
+
+
+
