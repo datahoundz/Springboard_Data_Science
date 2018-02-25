@@ -278,6 +278,9 @@ str(laws_cat_df)
 # 
 # =======================================================================
 
+# Data accessed at 
+# http://lawcenter.giffords.org/
+
 # Import Giffords Law Center data, compiled in CSV from website data
 giff_grd_df <- read.csv("data_cleaned/giffords_gunlawscorecard.csv")
 
@@ -312,4 +315,22 @@ giff_agg_df <- giff_grd_df %>%
   summarise(avg_score = round(mean(law_score), 2), avg_law_rnk = round(mean(law_rnk), 2), 
             avg_death_rnk = round(mean(death_rnk), 2), avg_bkgrnd = round(mean(bkgrnd_chk), 2))
 
+# =======================================================================
+# 
+# Import Gun Ownership Data and Guns & Ammo Magazine Rankings
+# 
+# =======================================================================
 
+# Data accessed at
+# http://injuryprevention.bmj.com/content/22/3/216
+# http://www.gunsandammo.com/second-amendment/best-states-for-gun-owners-2017/
+# http://www.gunsandammo.com/network-topics/culture-politics-network/best-states-for-gun-owners-2015/
+
+gun_own_2013_df <- read_excel("data_cleaned/gun_ownership_rates_2013.xlsx")
+gun_ammo_df <- read.csv("data_cleaned/guns_ammo_rankings.csv")
+
+head(gun_own_2013_df)
+summary(gun_own_2013_df)
+
+head(gun_ammo_df)
+summary(gun_ammo_df)
