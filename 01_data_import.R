@@ -216,7 +216,6 @@ head(state_codes_df)
 str(state_codes_df)
 
 
-
 # Clean up category names in State Firearm Codes
 state_codes_df <- state_codes_df %>%
   select(cat_code = `Category Code`, cat = Category, sub_cat = `Sub-Category`, var_name = `Variable Name`)
@@ -235,7 +234,7 @@ state_codes_df %>%
   filter(cat == "Buyer regulations") %>%
   select(var_name)
 
-# Collapse individual variables in to larger category groupings
+# Collapse 134 individual variables in to 14 larger category groupings
 laws_cat_df <- state_laws_df %>%
   mutate(deal_reg = dealer + dealerh + recordsall + recordsdealerh + recordsall + 
            reportdealer + reportdealerh + reportall + reportallh + purge + residential + 
@@ -270,6 +269,47 @@ laws_cat_df <- state_laws_df %>%
 
 head(laws_cat_df)
 summary(laws_cat_df)
+str(laws_cat_df)
 
+
+# =======================================================================
+# 
+# Import Giffords Law Center Gun Law Data
+# 
+# =======================================================================
+
+# Import Giffords Law Center data, compiled in CSV from website data
+giff_grd_df <- read.csv("data_cleaned/giffords_gunlawscorecard.csv")
+
+# Import LetterGardeConverter to translate letter to numeric grade
+grd_conv_df <- read.csv("data_cleaned/LetterGradeConverter.csv")
+
+# Review data frame contents
+
+head(grd_conv_df)
+head(giff_grd_df)
+str(giff_grd_df)
+summary(giff_grd_df)
+
+# Reverse numerical ordering of death_rnk to 1 for Fewest 50 for Most
+# More intuitive to have rank on both reflect greater safety
+giff_grd_df <- giff_grd_df %>%
+  mutate(death_rnk = 51 - death_rnk)
+
+head(giff_grd_df)
+
+# Calculate numerical grade from grd_conv_df table, re-arrange table
+giff_grd_df <- giff_grd_df %>%
+  left_join(grd_conv_df, by = c("law_grd" = "Letter")) %>%
+  select(state, year, law_grd, law_score = GPA, law_rnk, death_rnk, bkgrnd_chk) %>%
+  arrange(state, year)
+
+head(giff_grd_df)
+
+# Create aggreagte data table w/ avg scores and ranks by state
+giff_agg_df <- giff_grd_df %>%
+  group_by(state) %>%
+  summarise(avg_score = round(mean(law_score), 2), avg_law_rnk = round(mean(law_rnk), 2), 
+            avg_death_rnk = round(mean(death_rnk), 2), avg_bkgrnd = round(mean(bkgrnd_chk), 2))
 
 
