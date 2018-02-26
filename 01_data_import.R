@@ -7,6 +7,9 @@ library(purrr)
 library(ggplot2)
 library(lubridate)
 
+# Set options to limit sci notation and decimal places
+options(scipen = 999, digits = 3)
+
 # =======================================================================
 # 
 # Data Import - CDC Suicides, CDC Homicides, CDC Population
@@ -16,8 +19,8 @@ library(lubridate)
 # Data accessed at
 # https://wonder.cdc.gov/
 
-# Import CDC Suicide Data (cleaned version with additional footer data deleted) 
-suicides_df <- read_tsv("data_cleaned/CDC_FirearmSuicide_1999-2016.txt")
+# Import CDC Suicide Data (edited version with additional footer data deleted) 
+suicides_df <- read_tsv("data_edited/CDC_FirearmSuicide_1999-2016.txt")
 
 # Review general layout by viewing head of file
 head(suicides_df)
@@ -50,10 +53,19 @@ suicides_df %>%
 suicides_df <- mutate(suicides_df, sui_rate = ifelse(is.na(sui_rate), round(sui_cnt / sui_pop * 100000, 1), sui_rate))
 summary(suicides_df)
 
+# Run histograms to check distribution of values, any outliers
+hist(suicides_df$sui_cnt)
+hist(suicides_df$sui_rate)
+plot(suicides_df$sui_pop, suicides_df$sui_cnt)
+# Looks like everything checks out: fairly normal dist on rate, right skewed count due to pop size
+
+# Export to data_cleaned per Section 3 Data Wrangling Ex. 7
+write_csv(suicides_df, path = "data_cleaned/suicides_df.csv")
+
 # =======================================================================
 
 # Repeat process w/ appropriate variable adjustments for homicide data
-homicides_df <- read_tsv("data_cleaned/CDC_FirearmHomicide_1999-2016.txt")
+homicides_df <- read_tsv("data_edited/CDC_FirearmHomicide_1999-2016.txt")
 
 head(homicides_df)
 
@@ -83,13 +95,28 @@ homicides_df %>%
 homicides_df <- mutate(homicides_df, hom_rate = ifelse(is.na(hom_rate), round(hom_cnt / hom_pop * 100000, 1), hom_rate))
 summary(homicides_df)
 
+# Run histograms to check distribution of values, any outliers
+hist(homicides_df$hom_cnt)
+hist(homicides_df$hom_rate)
+plot(homicides_df$hom_pop, homicides_df$hom_cnt)
+# Right skewed count due to pop size. Curious long right tail in dist on rate? 
+
+homicides_df %>%
+  filter(hom_rate > 10) %>%
+  arrange(desc(hom_rate)) %>%
+  print(n = 25)
+# DC rate extremely high, partially due to small population
+hist(homicides_df$hom_rate[homicides_df$state != "District of Columbia"])
+
+# Export to data_cleaned per Section 3 Data Wrangling Ex. 7
+write_csv(homicides_df, path = "data_cleaned/homicides_df.csv")
 
 # =======================================================================
 
 # Modify process to adjust for population data
 
 # Import CDC Population Data (baseline for joining suicide/homicide data)
-population_df <- read_tsv("data_cleaned/CDC_PopEst_1990-2016.txt")
+population_df <- read_tsv("data_edited/CDC_PopEst_1990-2016.txt")
 head(population_df)
 
 # Similar adjustments for population table
@@ -112,6 +139,10 @@ population_df <- population_df %>%
 # Check results
 head(population_df)
 summary(population_df)
+hist(population_df$pop)
+
+# Export to data_cleaned per Section 3 Data Wrangling Ex. 7
+write_csv(population_df, path = "data_cleaned/population_df.csv")
 
 # =======================================================================
 # 
@@ -167,6 +198,8 @@ gun_deaths_df <- gun_deaths_df %>%
 # Check results
 summary(gun_deaths_df)
 
+# Export to data_cleaned per Section 3 Data Wrangling Ex. 7
+write_csv(gun_deaths_df, path = "data_cleaned/gun_deaths_df.csv")
 
 # =======================================================================
 # 
@@ -174,10 +207,10 @@ summary(gun_deaths_df)
 # 
 # =======================================================================
 
-# Regional data tables accessed at
+# Regional data information accessed at
 # https://www2.census.gov/geo/docs/maps-data/maps/reg_div.txt
 
-regions_df <- read_excel("data_cleaned/State_FIPS_Codes.xlsx")
+regions_df <- read_excel("data_edited/State_FIPS_Codes.xlsx")
 
 # Check data
 head(regions_df)
@@ -196,6 +229,8 @@ regions_df <- regions_df %>%
 head(regions_df)
 summary(regions_df)
 
+# Export to data_cleaned per Section 3 Data Wrangling Ex. 7
+write_csv(regions_df, path = "data_cleaned/regions_df.csv")
 
 # =======================================================================
 # 
@@ -206,8 +241,8 @@ summary(regions_df)
 # Data accessed at
 # https://www.statefirearmlaws.org/table.html
 
-state_laws_df <- read.csv("data_cleaned/state_gun_law_database.csv")
-state_codes_df <- read_xlsx("data_cleaned/state_gun_laws_codebook.xlsx")
+state_laws_df <- read.csv("data_edited/state_gun_law_database.csv")
+state_codes_df <- read_xlsx("data_edited/state_gun_laws_codebook.xlsx")
 
 head(state_laws_df)
 str(state_laws_df)
@@ -271,6 +306,10 @@ head(laws_cat_df)
 summary(laws_cat_df)
 str(laws_cat_df)
 
+# Export to data_cleaned per Section 3 Data Wrangling Ex. 7
+write_csv(state_laws_df, path = "data_cleaned/state_laws_df.csv")
+write_csv(laws_cat_df, path = "data_cleaned/laws_cat_df.csv")
+
 
 # =======================================================================
 # 
@@ -282,10 +321,10 @@ str(laws_cat_df)
 # http://lawcenter.giffords.org/
 
 # Import Giffords Law Center data, compiled in CSV from website data
-giff_grd_df <- read.csv("data_cleaned/giffords_gunlawscorecard.csv")
+giff_grd_df <- read.csv("data_edited/giffords_gunlawscorecard.csv")
 
 # Import LetterGardeConverter to translate letter to numeric grade
-grd_conv_df <- read.csv("data_cleaned/LetterGradeConverter.csv")
+grd_conv_df <- read.csv("data_edited/LetterGradeConverter.csv")
 
 # Review data frame contents
 
@@ -315,6 +354,10 @@ giff_agg_df <- giff_grd_df %>%
   summarise(avg_score = round(mean(law_score), 2), avg_law_rnk = round(mean(law_rnk), 2), 
             avg_death_rnk = round(mean(death_rnk), 2), avg_bkgrnd = round(mean(bkgrnd_chk), 2))
 
+# Export to data_cleaned per Section 3 Data Wrangling Ex. 7
+write_csv(giff_grd_df, path = "data_cleaned/giff_grd_df.csv")
+write_csv(giff_agg_df, path = "data_cleaned/giff_agg_df.csv")
+
 # =======================================================================
 # 
 # Import Gun Ownership Data and Guns & Ammo Magazine Rankings
@@ -326,11 +369,13 @@ giff_agg_df <- giff_grd_df %>%
 # http://www.gunsandammo.com/second-amendment/best-states-for-gun-owners-2017/
 # http://www.gunsandammo.com/network-topics/culture-politics-network/best-states-for-gun-owners-2015/
 
-gun_own_2013_df <- read_excel("data_cleaned/gun_ownership_rates_2013.xlsx")
-gun_ammo_df <- read.csv("data_cleaned/guns_ammo_rankings.csv")
+gun_own_2013_df <- read_excel("data_edited/gun_ownership_rates_2013.xlsx")
+gun_ammo_df <- read.csv("data_edited/guns_ammo_rankings.csv")
 
 head(gun_own_2013_df)
 summary(gun_own_2013_df)
 
 head(gun_ammo_df)
 summary(gun_ammo_df)
+
+# No data cleaning required
