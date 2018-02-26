@@ -1,0 +1,151 @@
+state,year,law_grd,law_score,law_rnk,death_rnk,bkgrnd_chk
+Alabama,2014,F,0,37,46,0
+Alabama,2015,F,0,36,47,0
+Alabama,2016,F,0,37,48,0
+Alaska,2014,F,0,44,47,1
+Alaska,2015,F,0,46,50,0
+Alaska,2016,F,0,44,50,0
+Arizona,2014,F,0,48,36,1
+Arizona,2015,F,0,47,36,0
+Arizona,2016,F,0,47,33,0
+Arkansas,2014,F,0,32,44,0
+Arkansas,2015,F,0,37,45,0
+Arkansas,2016,F,0,38,40,0
+California,2014,A-,3.67,1,9,1
+California,2015,A-,3.67,1,9,1
+California,2016,A,4,1,8,1
+Colorado,2014,C-,1.67,16,31,0
+Colorado,2015,C-,1.67,16,26,1
+Colorado,2016,C,2,14,29,1
+Connecticut,2014,A-,3.67,2,6,0
+Connecticut,2015,A-,3.67,2,4,1
+Connecticut,2016,A-,3.67,2,5,1
+Delaware,2014,B-,2.67,10,21,0
+Delaware,2015,B,3,10,19,1
+Delaware,2016,B,3,11,27,1
+Florida,2014,F,0,32,27,0
+Florida,2015,F,0,28,28,0
+Florida,2016,F,0,26,26,0
+Georgia,2014,F,0,27,32,0
+Georgia,2015,F,0,28,31,0
+Georgia,2016,F,0,29,35,0
+Hawaii,2014,B+,3.33,7,2,1
+Hawaii,2015,B+,3.33,7,1,1
+Hawaii,2016,A-,3.67,7,2,1
+Idaho,2014,F,0,39,35,0
+Idaho,2015,F,0,44,37,0
+Idaho,2016,F,0,46,36,0
+Illinois,2014,B+,3.33,8,13,0
+Illinois,2015,B+,3.33,8,11,1
+Illinois,2016,B+,3.33,8,12,1
+Indiana,2014,D-,0.67,23,28,0
+Indiana,2015,D-,0.67,23,33,0
+Indiana,2016,D-,0.67,24,30,0
+Iowa,2014,C-,1.67,15,8,0
+Iowa,2015,C-,1.67,17,10,1
+Iowa,2016,C,2,16,9,1
+Kansas,2014,F,0,41,34,0
+Kansas,2015,F,0,50,25,0
+Kansas,2016,F,0,48,20,0
+Kentucky,2014,F,0,47,38,0
+Kentucky,2015,F,0,43,34,0
+Kentucky,2016,F,0,42,38,0
+Louisiana,2014,F,0,50,49,0
+Louisiana,2015,F,0,44,49,0
+Louisiana,2016,F,0,43,49,0
+Maine,2014,F,0,24,14,0
+Maine,2015,F,0,35,21,0
+Maine,2016,F,0,36,15,0
+Maryland,2014,A-,3.67,4,18,0
+Maryland,2015,A-,3.67,4,15,1
+Maryland,2016,A-,3.67,5,24,1
+Massachusetts,2014,A-,3.67,6,1,1
+Massachusetts,2015,A-,3.67,5,2,1
+Massachusetts,2016,A-,3.67,4,1,1
+Michigan,2014,C,2,14,29,0
+Michigan,2015,C,2,15,29,1
+Michigan,2016,C,2,16,22,1
+Minnesota,2014,C,2,12,7,1
+Minnesota,2015,C,2,12,8,0
+Minnesota,2016,C+,2.33,12,7,0
+Mississippi,2014,F,0,48,48,0
+Mississippi,2015,F,0,49,48,0
+Mississippi,2016,F,0,50,46,0
+Missouri,2014,F,0,44,37,0
+Missouri,2015,F,0,41,39,0
+Missouri,2016,F,0,48,42,0
+Montana,2014,F,0,39,45,0
+Montana,2015,F,0,37,46,0
+Montana,2016,F,0,38,45,0
+Nebraska,2014,D,1,21,15,0
+Nebraska,2015,D,1,21,13,1
+Nebraska,2016,D,1,20,10,1
+Nevada,2014,F,0,29,33,0
+Nevada,2015,F,0,27,35,0
+Nevada,2016,C-,1.67,18,37,1
+New Hampshire,2014,D-,0.67,22,10,0
+New Hampshire,2015,D,1,22,7,0
+New Hampshire,2016,D,1,23,11,0
+New Jersey,2014,A-,3.67,3,5,0
+New Jersey,2015,A-,3.67,3,6,1
+New Jersey,2016,A-,3.67,3,6,1
+New Mexico,2014,F,0,34,42,0
+New Mexico,2015,F,0,33,42,0
+New Mexico,2016,F,0,29,44,0
+New York,2014,A-,3.67,5,4,0
+New York,2015,A-,3.67,6,3,1
+New York,2016,A-,3.67,5,3,1
+North Carolina,2014,F,0,29,26,0
+North Carolina,2015,F,0,25,30,1
+North Carolina,2016,D-,0.67,23,28,1
+North Dakota,2014,F,0,27,20,0
+North Dakota,2015,F,0,28,27,0
+North Dakota,2016,F,0,29,31,0
+Ohio,2014,D,1,19,24,0
+Ohio,2015,D,1,19,22,0
+Ohio,2016,D,1,21,25,0
+Oklahoma,2014,F,0,24,43,1
+Oklahoma,2015,F,0,25,43,0
+Oklahoma,2016,F,0,27,43,0
+Oregon,2014,D+,1.33,18,23,0
+Oregon,2015,C,2,14,23,1
+Oregon,2016,C,2,15,21,1
+Pennsylvania,2014,C,2,13,25,0
+Pennsylvania,2015,C,2,13,24,1
+Pennsylvania,2016,C,2,13,19,1
+Rhode Island,2014,B+,3.33,9,3,1
+Rhode Island,2015,B+,3.33,9,5,1
+Rhode Island,2016,B+,3.33,9,4,1
+South Carolina,2014,F,0,34,41,0
+South Carolina,2015,F,0,28,40,0
+South Carolina,2016,F,0,29,41,0
+South Dakota,2014,F,0,43,17,0
+South Dakota,2015,F,0,40,17,0
+South Dakota,2016,F,0,40,18,0
+Tennessee,2014,F,0,34,40,0
+Tennessee,2015,F,0,32,41,0
+Tennessee,2016,F,0,27,39,0
+Texas,2014,F,0,29,22,0
+Texas,2015,F,0,33,20,0
+Texas,2016,F,0,34,23,0
+Utah,2014,F,0,38,30,0
+Utah,2015,F,0,37,32,0
+Utah,2016,F,0,29,32,0
+Vermont,2014,F,0,41,12,0
+Vermont,2015,F,0,41,14,0
+Vermont,2016,F,0,41,13,0
+Virginia,2014,D,1,20,19,0
+Virginia,2015,D,1,20,18,0
+Virginia,2016,D,1,21,17,0
+Washington,2014,B-,2.67,11,16,1
+Washington,2015,B-,2.67,11,12,1
+Washington,2016,B,3,10,14,1
+West Virginia,2014,F,0,24,39,0
+West Virginia,2015,D-,0.67,24,38,0
+West Virginia,2016,F,0,34,34,0
+Wisconsin,2014,C-,1.67,17,11,0
+Wisconsin,2015,D,1,18,16,0
+Wisconsin,2016,C-,1.67,19,16,0
+Wyoming,2014,F,0,44,50,0
+Wyoming,2015,F,0,48,44,0
+Wyoming,2016,F,0,45,47,0
