@@ -1,16 +1,15 @@
----
-title: "Springboard Capstone – Initial Project Ideas"
-author: "Jim Scotland"
-date: "February 21, 2018"
-output: github_document
----
-
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(include = FALSE)
 ```
-  
-  
+
+---
+title: "Springboard Capstone – Initial Project Ideas"
+author: "Jim Scotland"
+date: "February 21, 2018"
+output: html_document
+---
+
 ### Diabetes Insulin & Glucose Management  
 
 __PROBLEM__: Diabetics need to maintain blood glucose levels (BGL) within a designated range. Excessive high levels lead to long-term organ damage. Excessive lows run the more immediate risks of coma or death.
@@ -33,13 +32,9 @@ __DATA__: The Gun Violence Archive collects data on reported gun violence situat
 
 __DATA SOURCES__:  
 <http://www.gunviolencearchive.org>  
-
 <https://wonder.cdc.gov>  
-
 <https://factfinder.census.gov>  
-
 <https://www.statefirearmlaws.org>  
-
 <http://lawcenter.giffords.org>  
   
 
@@ -53,6 +48,4 @@ __DATA__: Zillow Home Value Data, US News & World Report
 
 __DATA SOURCES__:  
 <https://www.zillow.com/research/data>  
-
 <https://www.usnews.com/best-colleges>  
-
