@@ -1,14 +1,15 @@
-```{r setup, include=FALSE}
-library(knitr)
-knitr::opts_chunk$set(include = FALSE)
-```
-
 ---
 title: "Springboard Capstone – Initial Project Ideas"
 author: "Jim Scotland"
 date: "February 21, 2018"
 output: html_document
 ---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(include = FALSE)
+```
+
 
 ### Diabetes Insulin & Glucose Management  
 
