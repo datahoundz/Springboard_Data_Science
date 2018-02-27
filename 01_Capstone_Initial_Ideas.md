@@ -24,9 +24,13 @@ February 21, 2018
 
 **DATA SOURCES**:
 <http://www.gunviolencearchive.org>
+
 <https://wonder.cdc.gov>
+
 <https://factfinder.census.gov>
+
 <https://www.statefirearmlaws.org>
+
 <http://lawcenter.giffords.org>
 
 ### College Towns and Home Value Growth
@@ -39,4 +43,5 @@ February 21, 2018
 
 **DATA SOURCES**:
 <https://www.zillow.com/research/data>
+
 <https://www.usnews.com/best-colleges>
