@@ -25,4 +25,4 @@ The state gun law data tracked back to 1991 and included 134 gun law variables. 
 Census Bureau data for state regions and sub-regions were imported to allow higher level data analysis investigating regional differences in gun ownership, gun laws and gun deaths. A unite command created region and subregion variables combining the code number and the name for simpler sorting of data legends when creating plots.  
 
 
-R-code file is available in GitHub repository [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/01_data_import.R).
+R-code file is available in GitHub repository [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/01_data_import.R) and cleaned csv files are [here](https://github.com/datahoundz/Springboard_Data_Science/tree/master/data_cleaned).
