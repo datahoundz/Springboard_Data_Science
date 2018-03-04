@@ -21,34 +21,41 @@ options(scipen = 999, digits = 3)
 giff_grd_df %>%
   ggplot(aes(x = law_score)) +
   geom_histogram() +
+  scale_x_reverse() +
   facet_grid(. ~ year)
 
-# Distribution is heavily right skewed with half of all states receiving a score of 0 or F.
+# Distribution is heavily left skewed with half of all states receiving a score of 0 or F.
 
-# Check for movement by adding geographical data layer to plot
+# Add geographical data layer w/ state labels to plot, y-axis = death_rnk
 giff_grd_df %>%
   left_join(regions_df, by = "state") %>%
+  filter(reg_code >= 0) %>%
   ggplot(aes(x = law_grd, y = death_rnk, label = usps_st, color = region)) +
   geom_text() +
   facet_grid(. ~ year)
 
-# Check internal correlation between Giffords Law Rank and Death Rank (death rank reversed for same good to bad scale)
+# Check internal correlation between Giffords Law Rank and Death Rank
+# Source death rank reversed to maintain same good -> bad scale
 giff_grd_df %>%
   ggplot(aes(x = law_rnk, y = death_rnk)) +
   geom_point() +
   stat_smooth(method = "lm", se = FALSE)
 
+# Calculate r2 and other summary statistics
+gf_mod1 <- lm(death_rnk ~ law_rnk, giff_grd_df)
+summary(gf_mod1)
+# Model indicates r2 of 0.55
+
+
 # Add geographical labeling element to identify outliers, facet by year
 giff_grd_df %>%
   left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = law_rnk, y = death_rnk, label = usps_st)) +
+  ggplot(aes(x = law_rnk, y = death_rnk, label = usps_st, color = region)) +
   facet_wrap(~ year) +
   geom_text() +
   stat_smooth(method = "lm", se = FALSE)
 
-# Add regional facet to view correlation in greater detail
-
-# Add geographical labeling element to identify outliers, facet by year
+# Add regional facet to view correlation across regions
 giff_grd_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = law_rnk, y = death_rnk, label = usps_st, color = region)) +
@@ -57,6 +64,46 @@ giff_grd_df %>%
   stat_smooth(method = "lm", se = FALSE)
 
 
+
+gf_ne_df <- giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(reg_code == 1)
+
+gf_ne_mod1 <- lm(death_rnk ~ law_rnk, gf_ne_df)
+summary(gf_ne_mod1)
+# r2 = 0.327
+
+# ----------------------------------------------------------
+
+gf_midwest_df <- giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(reg_code == 2)
+
+gf_midwest_mod1 <- lm(death_rnk ~ law_rnk, gf_midwest_df)
+summary(gf_midwest_mod1)
+# r2 = 0.338
+
+# ----------------------------------------------------------
+
+gf_south_df <- giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(reg_code == 3)
+
+gf_south_mod1 <- lm(death_rnk ~ law_rnk, gf_south_df)
+summary(gf_south_mod1)
+# r2 = o.525
+
+# ----------------------------------------------------------
+
+gf_west_df <- giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(reg_code == 4)
+
+gf_west_mod1 <- lm(death_rnk ~ law_rnk, gf_west_df)
+summary(gf_west_mod1)
+# r2 = 0.744
+
+# ---------------------------------------------------------
 
 gun_ammo_df %>%
   filter(year == 2015) %>%
