@@ -23,7 +23,11 @@ giff_grd_df %>%
   ggplot(aes(x = law_score)) +
   geom_histogram() +
   scale_x_reverse() +
-  facet_grid(. ~ year)
+  facet_grid(. ~ year) +
+  ylab("States (n)") +
+  xlab("Giffords Law Grade (GPA Scale)") +
+  ggtitle("Distribution of Giffords Law Grades")
+  
 # Distribution is heavily left skewed with half of all states receiving a score of 0 or F.
 
 
@@ -40,7 +44,12 @@ giff_grd_df %>%
   filter(reg_code >= 0) %>%
   ggplot(aes(x = law_grd, y = death_rnk, label = usps_st, color = region)) +
   geom_text() +
-  facet_grid(. ~ year)
+  facet_grid(. ~ year) +
+  labs(color = "Region") +
+  ylab("State Gun Death Rank") +
+  xlab("Giffords Law Grade") +
+  labs(title = "Giffords Law Grades Plotted by Gun Death Rank", subtitle = "1 = Best, 50 = Worst")
+
 # Modified histogram highlights F scores and worse Death Rank dominated by South and West.
 # Of the 20 worst death rankings, between 18 and 20 had a law grade of F over three years.
 
@@ -60,7 +69,11 @@ giff_grd_df %>%
 giff_grd_df %>%
   ggplot(aes(x = law_rnk, y = death_rnk)) +
   geom_point() +
-  stat_smooth(method = "lm", se = FALSE)
+  stat_smooth(method = "lm", se = FALSE) +
+  ylab("State Gun Death Rank") +
+  xlab("State Gun Law Rank") +
+  labs(title = "Giffords Gun Death Rank by Gun Law Rank", subtitle = "1 = Best, 50 = Worst") +
+  labs(caption = "Based upon Giffords Law Center ratings for 2014-2016")
 
 # Scatterplot suggest significant correlation between law rank and death rank.
 
@@ -78,7 +91,12 @@ giff_grd_df %>%
   ggplot(aes(x = law_rnk, y = death_rnk, label = usps_st, color = region)) +
   facet_wrap(~ year) +
   geom_text() +
-  stat_smooth(method = "lm", se = FALSE)
+  stat_smooth(method = "lm", se = FALSE) +
+  labs(color = "Region") +
+  ylab("State Gun Death Rank") +
+  xlab("State Gun Law Rank") +
+  labs(title = "Giffords Gun Death Rank by Gun Law Rank", 
+       subtitle = "1 = Best, 50 = Worst, Regional Regression Lines")
 
 # Clear distinction between regions jumps out from regression lines. 
 
@@ -87,9 +105,15 @@ giff_grd_df %>%
 giff_grd_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = law_rnk, y = death_rnk, label = usps_st, color = region)) +
-  facet_grid(region ~ year) +
+  facet_grid(year ~ region) +
   geom_text() +
-  stat_smooth(method = "lm", se = FALSE)
+  stat_smooth(method = "lm", se = FALSE) +
+  labs(color = "Region") +
+  ylab("State Gun Death Rank") +
+  xlab("State Gun Law Rank") +
+  labs(title = "Giffords Regional Gun Death Rank by Gun Law Rank", 
+       subtitle = "1 = Best, 50 = Worst") +
+  theme(legend.position = "none")
 
 # Added regional facet increases readability while still highlighting regional distinctions.
 
@@ -117,8 +141,14 @@ gun_ammo_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = gun_ammo_rnk, y = death_rnk, label = usps_st, color = region)) +
   geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE) +
-  facet_grid(. ~ region)
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Region") +
+  ylab("Giffords Gun Death Rank") +
+  xlab("Guns & Ammo Best States Rank") +
+  labs(title = "Guns & Ammo: Best States for Gun Owners by Gun Death Rank", 
+       subtitle = "1 = Best, 50 = Worst") +
+  labs(caption = "Based on 2015 rankings from Guns & Ammo and Giffords Law Center") +
+  theme(legend.position = "right")
 
 gun_ammo_df %>%
   filter(year == 2015) %>%
@@ -136,7 +166,14 @@ gun_ammo_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = gun_ammo_rnk, y = hom_rate, label = usps_st, color = region)) +
   geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE)
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Region") +
+  ylab("CDC Firearm Homicide Rate") +
+  xlab("Guns & Ammo Best States Rank") +
+  labs(title = "Guns & Ammo: Best States for Gun Owners by CDC Firearm Homicide Rate", 
+       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
+  labs(caption = "Based on 2015 data from Guns & Ammo and Centers for Disease Control") +
+  theme(legend.position = "right")
   
 gun_ammo_df %>%
   filter(year == 2015) %>%
@@ -152,12 +189,20 @@ gun_ammo_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = gun_ammo_rnk, y = sui_rate, label = usps_st, color = region)) +
   geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE, colour = "blue")
+  stat_smooth(method = "lm", se = FALSE, colour = "blue") +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("Guns & Ammo Best States Rank") +
+  labs(title = "Guns & Ammo: Best States for Gun Owners by CDC Firearm Suicide Rate", 
+       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
+  labs(caption = "Based on 2015 data from Guns & Ammo and Centers for Disease Control") +
+  theme(legend.position = "right")
 
 gun_ammo_df %>%
   filter(year == 2015) %>%
   left_join(gun_deaths_df, by = join_key) %>%
   summarize(N = n(), r2 = cor(sui_rate, gun_ammo_rnk)^2)
+# r2 = 0.466
 
 # Significant correlation between G&A rank and firearm suicide rate, r2 of 0.466
 
@@ -169,7 +214,14 @@ gun_ammo_df %>%
   ggplot(aes(x = gun_ammo_rnk, y = sui_rate, label = usps_st, color = region)) +
   geom_text(position = "jitter") +
   stat_smooth(method = "lm", se = FALSE) +
-  facet_grid(. ~ region)
+  facet_grid(. ~ region) +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("Guns & Ammo Best States Rank") +
+  labs(title = "Guns & Ammo: Best States for Gun Owners by CDC Firearm Suicide Rate", 
+       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
+  labs(caption = "Based on 2015 data from Guns & Ammo and Centers for Disease Control") +
+  theme(legend.position = "none")
 
 # Sharp regional contrasts emerge once more
 
@@ -181,13 +233,21 @@ giff_grd_df %>%
   ggplot(aes(x = law_rnk, y = sui_rate, label = usps_st, color = region)) +
   geom_text(position = "jitter") +
   stat_smooth(method = "lm", se = FALSE) +
-  facet_grid(. ~ region)
+  facet_grid(. ~ region) +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("Guns & Ammo Best States Rank") +
+  labs(title = "Giffords Law Rank by CDC Firearm Suicide Rate", 
+       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
+  labs(caption = "Based on 2015 data from Giffords Law Center and Centers for Disease Control") +
+  theme(legend.position = "none")
 
 giff_grd_df %>%
   filter(year == 2015) %>%
   left_join(gun_deaths_df, by = join_key) %>%
   left_join(regions_df, by = "state") %>%
   summarize(N = n(), r2 = cor(sui_rate, law_rnk)^2)
+# r2 = 0.616
 
 # =======================================================================
 # 
@@ -216,7 +276,14 @@ gun_own_2013_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = region, y = own_rate, color = region, label = usps_st)) +
   geom_boxplot() +
-  geom_text(position = "jitter")
+  geom_text(position = "jitter") +
+  labs(color = "Region") +
+  ylab("Gun Ownership Rate") +
+  xlab("Region") +
+  labs(title = "Gun Ownership Rates by Region", 
+       subtitle = "Ownership Rates for 2013") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "none")
 
 # Boxplot displays regional differences and outliers w/in regions
 
@@ -227,7 +294,14 @@ giff_grd_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = own_rate, y = law_rnk, label = usps_st, color = region)) +
   geom_text() +
-  stat_smooth(method = "lm", se = FALSE, colour = "blue")
+  stat_smooth(method = "lm", se = FALSE, colour = "blue") +
+  labs(color = "Region") +
+  ylab("Giffords Law Rank (2014 Data)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Ownership Rates by Giffords Law Rank", 
+       subtitle = "Ownership Rates for 2013, Rank: 1 = Best, 50 = Worst") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
 
 giff_grd_df %>%
   filter(year == 2014) %>%
@@ -244,7 +318,14 @@ gun_deaths_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
   geom_text() +
-  stat_smooth(method = "lm", se = FALSE, colour = "blue")
+  stat_smooth(method = "lm", se = FALSE, colour = "blue") +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Firearm Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
 
 gun_deaths_df %>%
   filter(year == 2013) %>%
@@ -262,7 +343,14 @@ gun_deaths_df %>%
   ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
   geom_text() +
   stat_smooth(method = "lm", se = FALSE) +
-  facet_grid(. ~ region)
+  facet_grid(. ~ region)  +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Regional Firearm Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "none")
 
 
 
