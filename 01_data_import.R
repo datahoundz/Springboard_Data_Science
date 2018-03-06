@@ -379,3 +379,35 @@ head(gun_ammo_df)
 summary(gun_ammo_df)
 
 # No data cleaning required
+
+
+# =======================================================================
+# 
+# Import CDC Suicide Data ALL METHODS
+# 
+# =======================================================================
+
+# Data accessed at
+# https://wonder.cdc.gov/
+
+# Import CDC Suicide Data, ALL METHODS (edited version with additional footer data deleted) 
+all_suicides_df <- read_tsv("data_edited/CDC_AllSuicides_State_1999-2016.txt")
+
+# Review general layout by viewing head of file
+head(all_suicides_df)
+
+# Remove duplicate/empty columns, make Rate numeric
+all_suicides_df$Notes <- NULL
+all_suicides_df$'State Code' <- NULL
+all_suicides_df$'Year Code' <- NULL
+all_suicides_df$`Crude Rate` <- as.numeric(all_suicides_df$`Crude Rate`)
+
+# Standardize and sepcify variable names (plan to merge w/ homicide data)
+all_suicides_df <- all_suicides_df %>%
+  rename(state = State) %>%
+  rename(year = Year) %>%
+  rename(all_sui_cnt = Deaths) %>%
+  rename(all_sui_pop = Population) %>%
+  rename(all_sui_rate = 'Crude Rate')
+
+summary(all_suicides_df)
