@@ -176,6 +176,13 @@ gun_deaths_df %>%
 # Max of 30.7 stems from exceedingly high DC rates noted on import, will filter
 # out DC for boxplots below to avoid excessive skewing of y-axis
 
+# Add regional grouping
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(hom_rate), Max = max(hom_rate), AvgScore = mean(hom_rate), 
+            Median = median(hom_rate), IQR = IQR(hom_rate), SD = sd(hom_rate))
 
 # Statistical summary for Suicide rates
 gun_deaths_df %>%
@@ -183,6 +190,40 @@ gun_deaths_df %>%
   summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), AvgScore = mean(sui_rate), 
             Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
 
+# Add regional grouping
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), AvgScore = mean(sui_rate), 
+            Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
+
+# Check out same data for all suicide methods
+all_suicides_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(all_sui_rate), Max = max(all_sui_rate), AvgScore = mean(all_sui_rate), 
+            Median = median(all_sui_rate), IQR = IQR(all_sui_rate), SD = sd(all_sui_rate))
+# Hmm?
+
+# Create new suicide method table and calculate pct of suicides by gun
+sui_method_df <- all_suicides_df %>%
+  left_join(gun_deaths_df, by = join_key) %>%
+  select(state, year, pop, all_cnt = all_sui_cnt, all_rate = all_sui_rate, gun_cnt = sui_cnt, gun_rate = sui_rate) %>%
+  mutate(gun_pct = gun_cnt/all_cnt)
+
+head(sui_method_df)
+summary(sui_method_df)
+
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = subregion, y = gun_pct, color = subregion)) +
+  geom_boxplot()
+
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = subregion, y = all_rate, color = subregion)) +
+  geom_boxplot()
+  
 
 # Check regional distribution of CDC Firearm Suicide rates
 gun_deaths_df %>%
