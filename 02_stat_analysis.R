@@ -278,11 +278,11 @@ sui_method_df %>%
   left_join(regions_df, value = "state") %>%
   inner_join(giff_grd_df, by = join_key) %>%
   mutate(Giffords_F = law_score == 0) %>%
-  ggplot(aes(x = usps_st, y = rate, fill = cause)) +
-  facet_grid(Abv_Average_Rate ~ Giffords_F, labeller = label_both) +
-  geom_col() +
-  geom_hline(aes(yintercept = 15.9)) +
-  coord_flip()
+    ggplot(aes(x = usps_st, y = rate, fill = cause)) +
+    facet_grid(Giffords_F ~ Abv_Average_Rate, labeller = label_both, scales = "free_y") +
+    geom_col() +
+    geom_hline(linetype = 2, aes(yintercept = mean(all_rate))) +
+    coord_flip()
 
 # Create table for count of results from above
 sui_method_df %>%
@@ -292,7 +292,19 @@ sui_method_df %>%
   mutate(Giffords_F = law_score == 0) %>%
   select(Giffords_F, Abv_Average_Rate) %>%
   table()
+# Out of 50 states, 41 Abv Avg Suicide ratings were indicated correctly by Gifford F
 
+
+
+# Check r2 for above plot
+sui_method_df %>%
+  filter(year == 2016) %>%
+  mutate(other_rate = all_rate - gun_rate, Abv_Average_Rate = all_rate > mean(all_rate)) %>%
+  inner_join(giff_grd_df, by = join_key) %>%
+  mutate(Giffords_F = law_score == 0) %>%
+  select(Giffords_F, Abv_Average_Rate) %>%
+  summarize(N = n(), r2 = cor(Giffords_F, Abv_Average_Rate)^2)
+# r2 = 0.410 indicates moderate relationship between Giffords F and total suicide rate
 
 # ==================================================================
 
