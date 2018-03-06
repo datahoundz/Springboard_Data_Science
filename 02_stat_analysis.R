@@ -25,8 +25,8 @@ giff_grd_df %>%
   scale_x_reverse() +
   facet_grid(. ~ year) +
   ylab("States (n)") +
-  xlab("Giffords Law Grade (GPA Scale)") +
-  ggtitle("Distribution of Giffords Law Grades")
+  xlab("Giffords Gun Law Grade (GPA Scale)") +
+  labs(title = "Distribution of Giffords Gun Law Grades", subtitle = "GPA Scale: 4 = A, 0 = F")
   
 # Distribution is heavily left skewed with half of all states receiving a score of 0 or F.
 
@@ -47,8 +47,8 @@ giff_grd_df %>%
   facet_grid(. ~ year) +
   labs(color = "Region") +
   ylab("State Gun Death Rank") +
-  xlab("Giffords Law Grade") +
-  labs(title = "Giffords Law Grades Plotted by Gun Death Rank", subtitle = "1 = Best, 50 = Worst")
+  xlab("Giffords Gun Law Grade") +
+  labs(title = "Giffords Gun Law Grades Plotted by Gun Death Rank", subtitle = "Rank: 1 = Best, 50 = Worst")
 
 # Modified histogram highlights F scores and worse Death Rank dominated by South and West.
 # Of the 20 worst death rankings, between 18 and 20 had a law grade of F over three years.
@@ -115,7 +115,7 @@ giff_grd_df %>%
        subtitle = "1 = Best, 50 = Worst") +
   theme(legend.position = "none")
 
-# Added regional facet increases readability while still highlighting regional distinctions.
+# Added regional facet increases readability and clearly highlights regional distinctions.
 
 
 giff_grd_df %>%
@@ -159,6 +159,58 @@ gun_ammo_df %>%
 # between Guns & Ammo ranking of Best States for Gun Owners and the Giffords
 # death rank.
 
+
+# =======================================================================
+# 
+# Statistical Analysis - CDC Firearm Homicide & Suicide Data
+# 
+# =======================================================================
+
+# Run basic stats on CDC Homicide and Suicide Rates
+
+# Statistical summary for Homicide rates
+gun_deaths_df %>%
+  ungroup(state) %>%
+  summarize(N = n(), Min = min(hom_rate), Max = max(hom_rate), AvgScore = mean(hom_rate), 
+            Median = median(hom_rate), IQR = IQR(hom_rate), SD = sd(hom_rate))
+# Max of 30.7 stems from exceedingly high DC rates noted on import, will filter
+# out DC for boxplots below to avoid excessive skewing of y-axis
+
+
+# Statistical summary for Suicide rates
+gun_deaths_df %>%
+  ungroup(state) %>%
+  summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), AvgScore = mean(sui_rate), 
+            Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
+
+
+# Check regional distribution of CDC Firearm Suicide rates
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = region, y = sui_rate, color = region, label = usps_st)) +
+  geom_boxplot() +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("Region") +
+  labs(title = "Firearm Suicide Rates by Region", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "none")
+
+# Same plot for CDC Firearm Homicide rates
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ggplot(aes(x = region, y = hom_rate, color = region, label = usps_st)) +
+  geom_boxplot() +
+  labs(color = "Region") +
+  ylab("CDC Firearm Homicide Rate") +
+  xlab("Region") +
+  labs(title = "Firearm Homicide Rates by Region", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "none")
+
 # Run G&A Rank against CDC Firearm Homicide Rate
 gun_ammo_df %>%
   filter(year == 2015) %>%
@@ -174,7 +226,7 @@ gun_ammo_df %>%
        subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
   labs(caption = "Based on 2015 data from Guns & Ammo and Centers for Disease Control") +
   theme(legend.position = "right")
-  
+
 gun_ammo_df %>%
   filter(year == 2015) %>%
   left_join(gun_deaths_df, by = join_key) %>%
@@ -225,6 +277,7 @@ gun_ammo_df %>%
 
 # Sharp regional contrasts emerge once more
 
+
 # Run same graph as above but between Gifford Law Rank and Suicide Rate
 giff_grd_df %>%
   filter(year == 2015) %>%
@@ -236,8 +289,8 @@ giff_grd_df %>%
   facet_grid(. ~ region) +
   labs(color = "Region") +
   ylab("CDC Firearm Suicide Rate") +
-  xlab("Guns & Ammo Best States Rank") +
-  labs(title = "Giffords Law Rank by CDC Firearm Suicide Rate", 
+  xlab("Giffords Gun Law Rank") +
+  labs(title = "Giffords Gun Law Rank by CDC Firearm Suicide Rate", 
        subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
   labs(caption = "Based on 2015 data from Giffords Law Center and Centers for Disease Control") +
   theme(legend.position = "none")
@@ -296,9 +349,9 @@ giff_grd_df %>%
   geom_text() +
   stat_smooth(method = "lm", se = FALSE, colour = "blue") +
   labs(color = "Region") +
-  ylab("Giffords Law Rank (2014 Data)") +
-  xlab("Gun Ownership Rate") +
-  labs(title = "Ownership Rates by Giffords Law Rank", 
+  ylab("Giffords Gun Law Rank (2014)") +
+  xlab("Gun Ownership Rate (2013)") +
+  labs(title = "Ownership Rates by Giffords Gun Law Rank", 
        subtitle = "Ownership Rates for 2013, Rank: 1 = Best, 50 = Worst") +
   labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "bottom")
@@ -318,7 +371,7 @@ gun_deaths_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
   geom_text() +
-  stat_smooth(method = "lm", se = FALSE, colour = "blue") +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
   labs(color = "Region") +
   ylab("CDC Firearm Suicide Rate (2013)") +
   xlab("Gun Ownership Rate") +
@@ -352,6 +405,12 @@ gun_deaths_df %>%
   labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "none")
 
+
+# =======================================================================
+# 
+# Statistical Analysis - BU Public Health State Firearm Law Data
+# 
+# =======================================================================
 
 
 
