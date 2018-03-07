@@ -219,6 +219,7 @@ sui_method_df <- all_suicides_df %>%
   mutate(gun_pct = gun_cnt/all_cnt, other_cnt = all_cnt - gun_cnt, other_rate = other_cnt/all_cnt)
 
 head(sui_method_df)
+summary(sui_method_df)
 
 # Plot overall suicide rates by subregion
 sui_method_df %>%
@@ -249,13 +250,14 @@ sui_method_df %>%
   summarize(N = n(), r2 = cor(all_rate, gun_rate)^2)
 # r2 = 0.826, very strong relationship as shown in plot
 
-# Check same relationship brokenn out by subregion
+# Check same relationship broken out by subregion
 sui_method_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = gun_rate, y = all_rate, color = subregion)) +
   geom_point() +
   stat_smooth(method = "lm", se = FALSE) +
   facet_wrap(~ subregion)
+
 
 # Check r2 for above plot
 sui_method_df %>%
@@ -282,7 +284,15 @@ sui_method_df %>%
     facet_grid(Giffords_F ~ Abv_Average_Rate, labeller = label_both, scales = "free_y") +
     geom_col() +
     geom_hline(linetype = 2, aes(yintercept = mean(all_rate))) +
-    coord_flip()
+    coord_flip() +
+    labs(fill = "Suicide Rate") +
+    ylab("Suicide Rate") +
+    xlab("State") +
+    labs(title = "Overall Suicide Rates and States Scoring F on Giffords Gun Law Grade", 
+         subtitle = "True/False Panels: Above Average Suicide Rate and Giffords Grade of F, Dashed Line Indicates Average") +
+    labs(caption = "Giffords Law Center & Centers for Disease Control Data for 2016") +
+    theme(legend.position = "right")
+
 
 # Create table for count of results from above
 sui_method_df %>%
@@ -295,7 +305,6 @@ sui_method_df %>%
 # Out of 50 states, 41 Abv Avg Suicide ratings were indicated correctly by Gifford F
 
 
-
 # Check r2 for above plot
 sui_method_df %>%
   filter(year == 2016) %>%
@@ -305,6 +314,42 @@ sui_method_df %>%
   select(Giffords_F, Abv_Average_Rate) %>%
   summarize(N = n(), r2 = cor(Giffords_F, Abv_Average_Rate)^2)
 # r2 = 0.410 indicates moderate relationship between Giffords F and total suicide rate
+
+
+sui_method_df %>%
+  group_by(year) %>%
+  mutate(abv_avg_rate = all_rate > mean(all_rate)) %>%
+  group_by(abv_avg_rate) %>%
+  summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct))
+# Since 1999, guns accounted for an average 58% of suicides in states with above average suicide
+# rates and 48% of suicides in states with below average rates (average rates calculated annually).
+
+
+# Check Overall Suicide Rates against Gun Ownership Rates
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = all_rate)) +
+  geom_point() +
+  stat_smooth(method = "lm", se = FALSE)
+
+# Check strength of correlation
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  summarize(N = n(), r2 = cor(all_rate, own_rate)^2)
+# r2 = 0.399 suggesting significant relationship
+
+# Add geograpical dimension
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = all_rate, color = subregion, label = usps_st)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~ subregion) +
+  theme(legend.position = "right")
 
 # ==================================================================
 
