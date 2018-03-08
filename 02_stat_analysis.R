@@ -99,6 +99,28 @@ gun_deaths_df %>%
   summarize(N = n(), r2 = cor(sui_rate, hom_rate)^2)
 # At r2 of 0.0168, close to zero relationship between homicide and suicide
 
+# Check state rates of suicides - homicides, assess greater risk
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  group_by(region, usps_st) %>%
+  summarise(Avg_Suicide_Rate = mean(sui_rate), Avg_Homicide_Rate = mean(hom_rate),
+            Suicide_Homicide_Diff = Avg_Suicide_Rate - Avg_Homicide_Rate) %>%
+  arrange(desc(Suicide_Homicide_Diff), desc(usps_st)) %>%
+  select(region, usps_st, Suicide_Homicide_Diff) %>%
+  ggplot(aes(x = reorder(usps_st, -Suicide_Homicide_Diff), y = Suicide_Homicide_Diff, fill = region)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_wrap(~ region, scales = "free_y") +
+  labs(color = "Region") +
+  ylab("Avg Firearm Suicide Rate Minus Avg Firearm Homicide Rate") +
+  xlab("State") +
+  labs(title = "Assessing the Greater Gun Threat: Firearm Suicides vs Firearm Homicides", 
+       subtitle = "Bars Indicate Amount by which Suicide Rate Exceeds Homicide Rate") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016; DC excluded to avoid skewing of scale.") +
+  theme(legend.position = "none")
+# Firearm homicide rates exceed firearm suicide rates in only 6 of 50 states
+
 # Turn focus to suicide only
 
 # Check summary data for ALL suicide methods
@@ -248,8 +270,8 @@ sui_method_df %>%
   group_by(year) %>%
   mutate(Above_Average_Suicide_Rate = all_rate > mean(all_rate)) %>%
   group_by(year, Above_Average_Suicide_Rate) %>%
-  summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct)) %>%
-  print(n = 36)
+  summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct))
+
 
 # =======================================================================
 # 
@@ -283,7 +305,7 @@ gun_own_2013_df %>%
   ylab("Gun Ownership Rate") +
   xlab("Region") +
   labs(title = "Gun Ownership Rates by Region", 
-       subtitle = "Ownership Rates for 2013") +
+       subtitle = "Household Gun Ownership Rates for 2013") +
   labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "none")
 
@@ -307,7 +329,7 @@ sui_method_df %>%
   ylab("CDC Overall Suicide Rate (2013)") +
   xlab("Gun Ownership Rate") +
   labs(title = "Overall Suicide Rates by Gun Ownership Rates", 
-       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+       subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
   labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "bottom")
 
@@ -332,7 +354,7 @@ sui_method_df %>%
   ylab("CDC Overall Suicide Rate (2013)") +
   xlab("Gun Ownership Rate") +
   labs(title = "Regional Overall Suicide Rates by Gun Ownership Rates", 
-       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+       subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
   labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "none")
 
@@ -357,7 +379,7 @@ gun_deaths_df %>%
   ylab("CDC Firearm Suicide Rate (2013)") +
   xlab("Gun Ownership Rate") +
   labs(title = "Firearm Suicide Rates by Gun Ownership Rates", 
-       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+       subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
   labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "bottom")
 
@@ -381,9 +403,37 @@ gun_deaths_df %>%
   ylab("CDC Firearm Suicide Rate (2013)") +
   xlab("Gun Ownership Rate") +
   labs(title = "Regional Firearm Suicide Rates by Gun Ownership Rates", 
-       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+       subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
   labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "none")
+
+gun_deaths_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), r2 = cor(own_rate, sui_rate)^2)
+# r2 ranges from 0.360 in Midwest to 0.487 in South, lack of data a problem 
+
+
+# Firearm suicide rates grouped by ownership rate
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(year == 2013) %>%
+  inner_join(gun_own_2013_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ggplot(aes(x = reorder(usps_st, -sui_rate), y = sui_rate, fill = region)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_grid(. ~ ntile(own_rate, 3)) +
+  labs(fill = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("State") +
+  labs(title = "States Ranked by Firearm Suicide Rate, Grouped by Gun Ownership Tier", 
+       subtitle = "Tier 1 = Low, Tier 2 = Med, Tier 3 = High, Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
+# Plot supports strong connection between gun ownership rates and higher firearm suicide levels 
 
 
 # =======================================================================
@@ -529,9 +579,10 @@ giff_grd_df %>%
   filter(year >= 2014) %>%
   left_join(gun_deaths_df, by = join_key) %>%
   left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
   summarize(N = n(), r2 = cor(sui_rate, law_rnk)^2)
-# r2 = 0.594
-
+# Overall r2 = 0.594
+# Regional r2 in 0.33 range for NE & MW, 0.525 in South and 0.744 in West
 
 # Calculate Average Total Suicide Rate for use below
 sui_method_df %>%
@@ -547,7 +598,7 @@ sui_method_df %>%
   left_join(regions_df, value = "state") %>%
   inner_join(giff_grd_df, by = join_key) %>%
   mutate(Giffords_F = law_score == 0) %>%
-    ggplot(aes(x = usps_st, y = rate, fill = cause)) +
+    ggplot(aes(x = reorder(usps_st, all_rate), y = rate, fill = cause)) +
     facet_grid(Giffords_F ~ Abv_Average_Rate, labeller = label_both, scales = "free_y") +
     geom_col() +
     geom_hline(linetype = 2, aes(yintercept = mean(all_rate))) +
@@ -562,7 +613,7 @@ sui_method_df %>%
 
 # Create table for count of results from above
 sui_method_df %>%
-  filter(year == 2014) %>%
+  filter(year == 2016) %>%
   mutate(other_rate = all_rate - gun_rate, Abv_Average_Rate = all_rate > mean(all_rate)) %>%
   inner_join(giff_grd_df, by = join_key) %>%
   mutate(Giffords_F = law_score == 0) %>%
@@ -571,15 +622,15 @@ sui_method_df %>%
 # Out of 50 states, 41 Abv Avg Suicide ratings were indicated correctly by Gifford F
 # Displayed data for 2016. Slightly lower accuracy in 2014 and 2015 at 38/50 each.
 
-# Check r2 for above plot
+# Check r2 for above plot, 2014 to 2016
 sui_method_df %>%
-  filter(year == 2016) %>%
+  filter(year >= 2014) %>%
   mutate(other_rate = all_rate - gun_rate, Abv_Average_Rate = all_rate > mean(all_rate)) %>%
   inner_join(giff_grd_df, by = join_key) %>%
   mutate(Giffords_F = law_score == 0) %>%
   select(Giffords_F, Abv_Average_Rate) %>%
   summarize(N = n(), r2 = cor(Giffords_F, Abv_Average_Rate)^2)
-# r2 = 0.410 indicates moderate relationship between Giffords F and total suicide rate
+# r2 = 0.304 indicates some relationship between Giffords F and above average suicide rate
 
 
 # =======================================================================
@@ -618,6 +669,7 @@ giff_grd_df %>%
 # Statistical Analysis - BU Public Health State Firearm Law Data
 # 
 # =======================================================================
+
 
 
 
