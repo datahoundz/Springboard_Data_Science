@@ -11,12 +11,354 @@ library(broom)
 # Set options to limit sci notation and decimal places
 options(scipen = 999, digits = 3)
 
+
+# =======================================================================
+# 
+# Statistical Analysis - CDC Firearm Homicide & Suicide Data
+# 
+# =======================================================================
+
+# Run basic stats on CDC Homicide and Suicide Rates
+
+# Statistical summary for Homicide rates
+gun_deaths_df %>%
+  ungroup(state) %>%
+  summarize(N = n(), Min = min(hom_rate), Max = max(hom_rate), Avg = mean(hom_rate), 
+            Median = median(hom_rate), IQR = IQR(hom_rate), SD = sd(hom_rate))
+# Max of 30.7 stems from exceedingly high DC rates noted on import, will filter
+# out DC for boxplots below to avoid excessive skewing of y-axis
+
+# Add regional grouping
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(hom_rate), Max = max(hom_rate), Avg = mean(hom_rate), 
+            Median = median(hom_rate), IQR = IQR(hom_rate), SD = sd(hom_rate))
+
+# Statistical summary for Firearm Suicide rates
+gun_deaths_df %>%
+  ungroup(state) %>%
+  summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), Avg = mean(sui_rate), 
+            Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
+
+# Add regional grouping
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), Avg = mean(sui_rate), 
+            Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
+
+# Check regional distribution of CDC Firearm Suicide rates
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = region, y = sui_rate, color = region, label = usps_st)) +
+  geom_boxplot() +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("Region") +
+  labs(title = "Firearm Suicide Rates by Region", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "none")
+
+# Same plot for CDC Firearm Homicide rates
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ggplot(aes(x = region, y = hom_rate, color = region, label = usps_st)) +
+  geom_boxplot() +
+  labs(color = "Region") +
+  ylab("CDC Firearm Homicide Rate") +
+  xlab("Region") +
+  labs(title = "Firearm Homicide Rates by Region", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "none")
+
+# Plot Suicide Rate by Homicide Rate 
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ggplot(aes(x = hom_rate, y = sui_rate, color = region, label = usps_st)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("CDC Firearm Homicide Rate") +
+  labs(title = "Firearm Suicide Rates by Firearm Homicide Rates", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016; DC excluded to avoid skewing of scale.") +
+  theme(legend.position = "right")
+
+# Run correlation on Homicide vs Suicide relationship
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ungroup(state) %>%
+  summarize(N = n(), r2 = cor(sui_rate, hom_rate)^2)
+# At r2 of 0.0168, close to zero relationship between homicide and suicide
+
+# Turn focus to suicide only
+
+# Check summary data for ALL suicide methods
+all_suicides_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(all_sui_rate), Max = max(all_sui_rate), Avg = mean(all_sui_rate), 
+            Median = median(all_sui_rate), IQR = IQR(all_sui_rate), SD = sd(all_sui_rate))
+
+# Compare to FIREARM suicide summary from above
+# Add regional grouping
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), Avg = mean(sui_rate), 
+            Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
+
+# Average firearm and overall suicide seem to scale together
+
+
+# =============================================================================
+# 
+# Need to determine if firearm rate is related to higher TOTAL suicide rates.
+# Assuming reduced firearm accessibility leads to lower overall suicide rate.
+# 
+# =============================================================================
+
+# Create new suicide method table and calculate pct of suicides by gun
+sui_method_df <- all_suicides_df %>%
+  left_join(gun_deaths_df, by = join_key) %>%
+  select(state, year, pop, all_cnt = all_sui_cnt, all_rate = all_sui_rate, gun_cnt = sui_cnt, gun_rate = sui_rate) %>%
+  mutate(gun_pct = gun_cnt/all_cnt, other_cnt = all_cnt - gun_cnt, other_rate = all_rate - gun_rate)
+
+head(sui_method_df)
+summary(sui_method_df)
+
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(subregion, usps_st) %>%
+  summarise(all_rate = mean(all_rate)) %>%
+  ggplot(aes(x = usps_st, y = all_rate, fill = subregion)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ subregion, scales = "free_x")
+
+
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(state, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
+  gather(key = "Method", value = "rate", c(other_rate, gun_rate))  %>%
+  ggplot(aes(x = year, y = rate, color = Method)) +
+  geom_line(size = 1) +
+  facet_wrap(~ state)
+# Time series plot of suicides broken out by firearm/other indicates major regional differences
+# Coastal states exhibit much lower firearm rates and suggest lower overal rates as well
+
+# Check overall rates per comment above
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(subregion, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000) %>%
+  ggplot(aes(x = year, y = all_rate, color = subregion)) +
+  geom_line(size = 1) +
+  theme(legend.position = "right")
+# Does appear that coastal states have lower overall suicide rates, with the mountain region much higher,
+# which may be due to significantly lower overall population levels.
+
+
+# Plot overall suicide rates by subregion
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(subregion, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
+  ggplot(aes(x = subregion, y = all_rate, color = subregion)) +
+  geom_boxplot() +
+  theme(legend.position = "right")
+
+
+# Try plotting Firearm Suicide Rate against Other Suicide Rate
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = gun_rate, y = other_rate, color = region)) +
+  geom_point() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue")
+
+# Check r2 for above plot
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  summarize(N = n(), r2 = cor(other_rate, gun_rate)^2)
+# r2 = 0.077, very weak relationship as shown in plot
+
+# Check same relationship broken out by subregion
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = gun_rate, y = other_rate, color = subregion)) +
+  geom_point() +
+  stat_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~ subregion)
+
+# Check r2 for above plot
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(subregion) %>%
+  summarize(N = n(), r2 = cor(other_rate, gun_rate)^2)
+# r2 = 0.720 to 0.895, very strong relationship holds across subregions
+
+
+sui_method_df %>%
+  group_by(year) %>%
+  mutate(abv_avg_rate = all_rate > mean(all_rate)) %>%
+  group_by(abv_avg_rate) %>%
+  summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct))
+# Since 1999, guns accounted for an average 58% of suicides in states with above average suicide
+# rates and 48% of suicides in states with below average rates (average rates calculated annually).
+
+
+# =======================================================================
+# 
+# Statistical Analysis - Gun Ownership Rates
+# 
+# =======================================================================
+
+# Run general statistical summary
+gun_own_2013_df %>%
+  summarize(N = n(), Min = min(own_rate), Max = max(own_rate), AvgScore = mean(own_rate), 
+            Median = median(own_rate), IQR = IQR(own_rate), SD = sd(own_rate))
+
+# AVerage ownership rate of 33% ranging from 5% to 61.7%
+
+# Add geographical layer to check ownership rate by region
+gun_own_2013_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(own_rate), Max = max(own_rate), AvgScore = mean(own_rate), 
+            Median = median(own_rate), IQR = IQR(own_rate), SD = sd(own_rate))
+
+# Below average rates in Northeast, above average in West and South - regional dynamic again.
+
+# Display regional difference w/ boxplots
+gun_own_2013_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = region, y = own_rate, color = region, label = usps_st)) +
+  geom_boxplot() +
+  geom_text(position = "jitter") +
+  labs(color = "Region") +
+  ylab("Gun Ownership Rate") +
+  xlab("Region") +
+  labs(title = "Gun Ownership Rates by Region", 
+       subtitle = "Ownership Rates for 2013") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "none")
+
+# Boxplot displays regional differences and outliers w/in regions
+
+# =======================================================================
+# 
+# Statistical Analysis - Gun Ownership Rates vs CDC Suicide Rates
+# 
+# =======================================================================
+
+# Check OVERALL Suicide Rates against Gun Ownership Rates
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = all_rate, color = region, label = usps_st)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Region") +
+  ylab("CDC Overall Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Overall Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
+
+# Check strength of correlation to OVERALL Suicide Rate
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  summarize(N = n(), r2 = cor(all_rate, own_rate)^2)
+# r2 = 0.399 suggesting significant relationship
+
+# Add geograpical dimension
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = all_rate, color = region, label = usps_st)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE) +
+  facet_grid(. ~ region) +
+  theme(legend.position = "none") +
+  labs(color = "Region") +
+  ylab("CDC Overall Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Regional Overall Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "none")
+
+# Check strength of regional correlation to OVERALL Suicide Rate
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), r2 = cor(all_rate, own_rate)^2)
+# r2 = 0.289 in NE to 0.441 in West suggesting moderate but significant relationship
+
+# Run ownership rate against FIREARM suicide rate for 2013
+gun_deaths_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Firearm Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
+
+gun_deaths_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  ungroup(state) %>%                                 # Don't know why needed to ungroup, but it worked?
+  summarize(N = n(), r2 = cor(own_rate, sui_rate)^2)
+# r2 of 0.547 indicates solid relationship between suicide rate and gun ownership 
+
+# Add regional facet to highlights differences in ownership and suicide rates
+gun_deaths_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE) +
+  facet_grid(. ~ region)  +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Regional Firearm Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "none")
+
+
 # =======================================================================
 # 
 # Statistical Analysis - Giffords Law Center Data
 # 
 # =======================================================================
-
 
 # Check distribution of Giffords Law Score (letter grade converted to numeric 0 to 4)
 giff_grd_df %>%
@@ -130,130 +472,34 @@ giff_grd_df %>%
 
 # =======================================================================
 # 
-# Statistical Analysis - CDC Firearm Homicide & Suicide Data
+# Statistical Analysis - Giffords Law Center Data vs CDC Firearm Suicide Rate
 # 
 # =======================================================================
 
-# Run basic stats on CDC Homicide and Suicide Rates
-
-# Statistical summary for Homicide rates
-gun_deaths_df %>%
-  ungroup(state) %>%
-  summarize(N = n(), Min = min(hom_rate), Max = max(hom_rate), Avg = mean(hom_rate), 
-            Median = median(hom_rate), IQR = IQR(hom_rate), SD = sd(hom_rate))
-# Max of 30.7 stems from exceedingly high DC rates noted on import, will filter
-# out DC for boxplots below to avoid excessive skewing of y-axis
-
-# Add regional grouping
-gun_deaths_df %>%
-  left_join(regions_df, by = "state") %>%
-  filter(usps_st != "DC") %>%
-  group_by(region) %>%
-  summarize(N = n(), Min = min(hom_rate), Max = max(hom_rate), Avg = mean(hom_rate), 
-            Median = median(hom_rate), IQR = IQR(hom_rate), SD = sd(hom_rate))
-
-# Statistical summary for Firearm Suicide rates
-gun_deaths_df %>%
-  ungroup(state) %>%
-  summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), Avg = mean(sui_rate), 
-            Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
-
-# Add regional grouping
-gun_deaths_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(region) %>%
-  summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), Avg = mean(sui_rate), 
-            Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
-
-# Check out same data for ALL suicide methods
-all_suicides_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(region) %>%
-  summarize(N = n(), Min = min(all_sui_rate), Max = max(all_sui_rate), Avg = mean(all_sui_rate), 
-            Median = median(all_sui_rate), IQR = IQR(all_sui_rate), SD = sd(all_sui_rate))
-
-# Average firearm and overall suicide seem to scale together
-
-# =============================================================================
-# 
-# IMPORTANT: Need to determine if firearm rate is related to higher TOTAL suicide rates.
-# 
-# =============================================================================
-
-
-# Create new suicide method table and calculate pct of suicides by gun
-sui_method_df <- all_suicides_df %>%
+# Run same graph as above but between Gifford Law Rank and Suicide Rate
+giff_grd_df %>%
+  filter(year >= 2014) %>%
   left_join(gun_deaths_df, by = join_key) %>%
-  select(state, year, pop, all_cnt = all_sui_cnt, all_rate = all_sui_rate, gun_cnt = sui_cnt, gun_rate = sui_rate) %>%
-  mutate(gun_pct = gun_cnt/all_cnt, other_cnt = all_cnt - gun_cnt, other_rate = all_rate - gun_rate)
-
-head(sui_method_df)
-summary(sui_method_df)
-
-sui_method_df %>%
   left_join(regions_df, by = "state") %>%
-  group_by(state, year) %>%
-  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
-            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
-            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
-  gather(key = "Method", value = "rate", c(other_rate, gun_rate))  %>%
-  ggplot(aes(x = year, y = rate, color = Method)) +
-  geom_line(size = 1) +
-  facet_wrap(~ state)
-# Time series plot of suicides broken out by firearm/other indicates major regional differences
-# Coastal states exhibit much lower firearm rates and suggest lower overal rates as well
-
-# Check overall rates per comment above
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(subregion, year) %>%
-  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000) %>%
-  ggplot(aes(x = year, y = all_rate, color = subregion)) +
-  geom_line(size = 1) +
-  theme(legend.position = "right")
-# Does appear that coastal states have lower overall suicide rates, with the mountain region much higher,
-# which may be due to significantly lower overall population levels.
-  
-
-# Plot overall suicide rates by subregion
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(subregion, year) %>%
-  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
-            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
-            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
-  ggplot(aes(x = subregion, y = all_rate, color = subregion)) +
-  geom_boxplot() +
-  theme(legend.position = "right")
-
-
-# Try plotting Firearm Suicide Rate against Other Suicide Rate
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = gun_rate, y = other_rate, color = region)) +
-  geom_point() +
-  stat_smooth(method = "lm", se = FALSE, color = "blue")
-
-# Check r2 for above plot
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  summarize(N = n(), r2 = cor(other_rate, gun_rate)^2)
-# r2 = 0.077, very weak relationship as shown in plot
-
-# Check same relationship broken out by subregion
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = gun_rate, y = other_rate, color = subregion)) +
-  geom_point() +
+  ggplot(aes(x = law_rnk, y = sui_rate, label = usps_st, color = region)) +
+  geom_text(position = "jitter") +
   stat_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~ subregion)
+  facet_grid(year ~ region) +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("Giffords Gun Law Rank") +
+  labs(title = "Giffords Gun Law Rank by CDC Firearm Suicide Rate", 
+       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
+  labs(caption = "Based on 2015 data from Giffords Law Center and Centers for Disease Control") +
+  theme(legend.position = "none")
 
-# Check r2 for above plot
-sui_method_df %>%
+giff_grd_df %>%
+  filter(year >= 2014) %>%
+  left_join(gun_deaths_df, by = join_key) %>%
   left_join(regions_df, by = "state") %>%
-  group_by(subregion) %>%
-  summarize(N = n(), r2 = cor(other_rate, gun_rate)^2)
-# r2 = 0.720 to 0.895, very strong relationship holds across subregions
+  summarize(N = n(), r2 = cor(sui_rate, law_rnk)^2)
+# r2 = 0.594
+
 
 # Calculate Average Total Suicide Rate for use below
 sui_method_df %>%
@@ -282,17 +528,16 @@ sui_method_df %>%
     labs(caption = "Giffords Law Center & Centers for Disease Control Data for 2016") +
     theme(legend.position = "right")
 
-
 # Create table for count of results from above
 sui_method_df %>%
-  filter(year == 2016) %>%
+  filter(year == 2014) %>%
   mutate(other_rate = all_rate - gun_rate, Abv_Average_Rate = all_rate > mean(all_rate)) %>%
   inner_join(giff_grd_df, by = join_key) %>%
   mutate(Giffords_F = law_score == 0) %>%
   select(Giffords_F, Abv_Average_Rate) %>%
   table()
 # Out of 50 states, 41 Abv Avg Suicide ratings were indicated correctly by Gifford F
-
+# Displayed data for 2016. Slightly lower accuracy in 2014 and 2015 at 38/50 each.
 
 # Check r2 for above plot
 sui_method_df %>%
@@ -305,69 +550,77 @@ sui_method_df %>%
 # r2 = 0.410 indicates moderate relationship between Giffords F and total suicide rate
 
 
-sui_method_df %>%
-  group_by(year) %>%
-  mutate(abv_avg_rate = all_rate > mean(all_rate)) %>%
-  group_by(abv_avg_rate) %>%
-  summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct))
-# Since 1999, guns accounted for an average 58% of suicides in states with above average suicide
-# rates and 48% of suicides in states with below average rates (average rates calculated annually).
+# =======================================================================
+# 
+# Statistical Analysis - Gun Ownership Rates vs Giffords Law Rankings
+# 
+# =======================================================================
 
-
-# Check Overall Suicide Rates against Gun Ownership Rates
-sui_method_df %>%
-  filter(year == 2013) %>%
-  left_join(gun_own_2013_df, by = "state") %>%
-  ggplot(aes(x = own_rate, y = all_rate)) +
-  geom_point() +
-  stat_smooth(method = "lm", se = FALSE)
-
-# Check strength of correlation
-sui_method_df %>%
-  filter(year == 2013) %>%
-  left_join(gun_own_2013_df, by = "state") %>%
-  summarize(N = n(), r2 = cor(all_rate, own_rate)^2)
-# r2 = 0.399 suggesting significant relationship
-
-# Add geograpical dimension
-sui_method_df %>%
-  filter(year == 2013) %>%
+# Ownership rates only available for 2013, will compare to Giffords 2014
+giff_grd_df %>%
+  filter(year == 2014) %>%
   left_join(gun_own_2013_df, by = "state") %>%
   left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = own_rate, y = all_rate, color = subregion, label = usps_st)) +
+  ggplot(aes(x = own_rate, y = law_rnk, label = usps_st, color = region)) +
   geom_text() +
-  stat_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~ subregion) +
+  stat_smooth(method = "lm", se = FALSE, colour = "blue") +
+  labs(color = "Region") +
+  ylab("Giffords Gun Law Rank (2014)") +
+  xlab("Gun Ownership Rate (2013)") +
+  labs(title = "Ownership Rates by Giffords Gun Law Rank", 
+       subtitle = "Ownership Rates for 2013, Rank: 1 = Best, 50 = Worst") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
+
+giff_grd_df %>%
+  filter(year == 2014) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  summarize(N = n(), r2 = cor(own_rate, law_rnk)^2)
+
+# Moderate negative relationship between Gifford Law Rank and Ownership Rate
+# with an r2 of 0.393
+
+
+# =======================================================================
+# 
+# Statistical Analysis - BU Public Health State Firearm Law Data
+# 
+# =======================================================================
+
+
+
+
+# =======================================================================
+# 
+# Statistical Analysis - Guns & Ammo Analysis  ## PROBABLY EXCLUDE ##
+# 
+# =======================================================================
+
+# Check relationship between Guns & Ammo Rank and Giffords Death Rank
+gun_ammo_df %>%
+  filter(year == 2015) %>%
+  left_join(giff_grd_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = gun_ammo_rnk, y = death_rnk, label = usps_st, color = region)) +
+  geom_text(position = "jitter") +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Region") +
+  ylab("Giffords Gun Death Rank") +
+  xlab("Guns & Ammo Best States Rank") +
+  labs(title = "Guns & Ammo: Best States for Gun Owners by Gun Death Rank", 
+       subtitle = "1 = Best, 50 = Worst") +
+  labs(caption = "Based on 2015 rankings from Guns & Ammo and Giffords Law Center") +
   theme(legend.position = "right")
 
-# ==================================================================
+gun_ammo_df %>%
+  filter(year == 2015) %>%
+  left_join(giff_grd_df, by = join_key) %>%
+  summarize(N = n(), r2 = cor(death_rnk, gun_ammo_rnk)^2)
 
-# Check regional distribution of CDC Firearm Suicide rates
-gun_deaths_df %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = region, y = sui_rate, color = region, label = usps_st)) +
-  geom_boxplot() +
-  labs(color = "Region") +
-  ylab("CDC Firearm Suicide Rate") +
-  xlab("Region") +
-  labs(title = "Firearm Suicide Rates by Region", 
-       subtitle = "Rate: Deaths per 100,000 Population") +
-  labs(caption = "Centers for Disease Control Data for 1999-2016") +
-  theme(legend.position = "none")
+# r2 = 0.409 indicating modearate but still significant negative relationship
+# between Guns & Ammo ranking of Best States for Gun Owners and the Giffords
+# death rank.
 
-# Same plot for CDC Firearm Homicide rates
-gun_deaths_df %>%
-  left_join(regions_df, by = "state") %>%
-  filter(usps_st != "DC") %>%
-  ggplot(aes(x = region, y = hom_rate, color = region, label = usps_st)) +
-  geom_boxplot() +
-  labs(color = "Region") +
-  ylab("CDC Firearm Homicide Rate") +
-  xlab("Region") +
-  labs(title = "Firearm Homicide Rates by Region", 
-       subtitle = "Rate: Deaths per 100,000 Population") +
-  labs(caption = "Centers for Disease Control Data for 1999-2016") +
-  theme(legend.position = "none")
 
 # Run G&A Rank against CDC Firearm Homicide Rate
 gun_ammo_df %>%
@@ -434,173 +687,4 @@ gun_ammo_df %>%
   theme(legend.position = "none")
 
 # Sharp regional contrasts emerge once more
-
-
-# Run same graph as above but between Gifford Law Rank and Suicide Rate
-giff_grd_df %>%
-  filter(year == 2015) %>%
-  left_join(gun_deaths_df, by = join_key) %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = law_rnk, y = sui_rate, label = usps_st, color = region)) +
-  geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE) +
-  facet_grid(. ~ region) +
-  labs(color = "Region") +
-  ylab("CDC Firearm Suicide Rate") +
-  xlab("Giffords Gun Law Rank") +
-  labs(title = "Giffords Gun Law Rank by CDC Firearm Suicide Rate", 
-       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
-  labs(caption = "Based on 2015 data from Giffords Law Center and Centers for Disease Control") +
-  theme(legend.position = "none")
-
-giff_grd_df %>%
-  filter(year == 2015) %>%
-  left_join(gun_deaths_df, by = join_key) %>%
-  left_join(regions_df, by = "state") %>%
-  summarize(N = n(), r2 = cor(sui_rate, law_rnk)^2)
-# r2 = 0.616
-
-# =======================================================================
-# 
-# Statistical Analysis - Gun Ownership Rates
-# 
-# =======================================================================
-
-# Run general statistical summary
-gun_own_2013_df %>%
-  summarize(N = n(), Min = min(own_rate), Max = max(own_rate), AvgScore = mean(own_rate), 
-            Median = median(own_rate), IQR = IQR(own_rate), SD = sd(own_rate))
-
-# AVerage ownership rate of 33% ranging from 5% to 61.7%
-
-# Add geographical layer to check ownership rate by region
-gun_own_2013_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(region) %>%
-  summarize(N = n(), Min = min(own_rate), Max = max(own_rate), AvgScore = mean(own_rate), 
-            Median = median(own_rate), IQR = IQR(own_rate), SD = sd(own_rate))
-  
-# Below average rates in Northeast, above average in West and South - regional dynamic again.
-
-# Display regional difference w/ boxplots
-gun_own_2013_df %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = region, y = own_rate, color = region, label = usps_st)) +
-  geom_boxplot() +
-  geom_text(position = "jitter") +
-  labs(color = "Region") +
-  ylab("Gun Ownership Rate") +
-  xlab("Region") +
-  labs(title = "Gun Ownership Rates by Region", 
-       subtitle = "Ownership Rates for 2013") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
-  theme(legend.position = "none")
-
-# Boxplot displays regional differences and outliers w/in regions
-
-# Ownership rates only available for 2013, will compare to Giffords 2014
-giff_grd_df %>%
-  filter(year == 2014) %>%
-  left_join(gun_own_2013_df, by = "state") %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = own_rate, y = law_rnk, label = usps_st, color = region)) +
-  geom_text() +
-  stat_smooth(method = "lm", se = FALSE, colour = "blue") +
-  labs(color = "Region") +
-  ylab("Giffords Gun Law Rank (2014)") +
-  xlab("Gun Ownership Rate (2013)") +
-  labs(title = "Ownership Rates by Giffords Gun Law Rank", 
-       subtitle = "Ownership Rates for 2013, Rank: 1 = Best, 50 = Worst") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
-  theme(legend.position = "bottom")
-
-giff_grd_df %>%
-  filter(year == 2014) %>%
-  left_join(gun_own_2013_df, by = "state") %>%
-  summarize(N = n(), r2 = cor(own_rate, law_rnk)^2)
-
-# Moderate negative relationship between Gifford Law Rank and Ownership Rate
-# with an r2 of 0.393
-
-# Run ownership rate against suicide rate for 2013
-gun_deaths_df %>%
-  filter(year == 2013) %>%
-  left_join(gun_own_2013_df, by = "state") %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
-  geom_text() +
-  stat_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(color = "Region") +
-  ylab("CDC Firearm Suicide Rate (2013)") +
-  xlab("Gun Ownership Rate") +
-  labs(title = "Firearm Suicide Rates by Gun Ownership Rates", 
-       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
-  theme(legend.position = "bottom")
-
-gun_deaths_df %>%
-  filter(year == 2013) %>%
-  left_join(gun_own_2013_df, by = "state") %>%
-  ungroup(state) %>%                                 # Don't know why needed to ungroup, but it worked?
-  summarize(N = n(), r2 = cor(own_rate, sui_rate)^2)
-
-# r2 of 0.547 indicates solid relationship between suicide rate and gun ownership 
-
-# Add regional facet to highlights differences in ownership and suicide rates
-gun_deaths_df %>%
-  filter(year == 2013) %>%
-  left_join(gun_own_2013_df, by = "state") %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
-  geom_text() +
-  stat_smooth(method = "lm", se = FALSE) +
-  facet_grid(. ~ region)  +
-  labs(color = "Region") +
-  ylab("CDC Firearm Suicide Rate (2013)") +
-  xlab("Gun Ownership Rate") +
-  labs(title = "Regional Firearm Suicide Rates by Gun Ownership Rates", 
-       subtitle = "Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
-  theme(legend.position = "none")
-
-
-# =======================================================================
-# 
-# Statistical Analysis - BU Public Health State Firearm Law Data
-# 
-# =======================================================================
-
-
-
-
-# =======================================================================
-# 
-# Statistical Analysis - Ranking Data: Guns & Ammo vs Giffords Law Center
-# 
-# =======================================================================
-
-# Check relationship between Guns & Ammo Rank and Giffords Death Rank
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(giff_grd_df, by = join_key) %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = gun_ammo_rnk, y = death_rnk, label = usps_st, color = region)) +
-  geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(color = "Region") +
-  ylab("Giffords Gun Death Rank") +
-  xlab("Guns & Ammo Best States Rank") +
-  labs(title = "Guns & Ammo: Best States for Gun Owners by Gun Death Rank", 
-       subtitle = "1 = Best, 50 = Worst") +
-  labs(caption = "Based on 2015 rankings from Guns & Ammo and Giffords Law Center") +
-  theme(legend.position = "right")
-
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(giff_grd_df, by = join_key) %>%
-  summarize(N = n(), r2 = cor(death_rnk, gun_ammo_rnk)^2)
-
-# r2 = 0.409 indicating modearate but still significant negative relationship
-# between Guns & Ammo ranking of Best States for Gun Owners and the Giffords
-# death rank.
 
