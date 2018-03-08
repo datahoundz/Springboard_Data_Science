@@ -135,39 +135,6 @@ sui_method_df <- all_suicides_df %>%
 head(sui_method_df)
 summary(sui_method_df)
 
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(subregion, usps_st) %>%
-  summarise(all_rate = mean(all_rate)) %>%
-  ggplot(aes(x = usps_st, y = all_rate, fill = subregion)) +
-  geom_bar(stat = "identity") +
-  facet_wrap(~ subregion, scales = "free_x")
-
-
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(state, year) %>%
-  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
-            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
-            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
-  gather(key = "Method", value = "rate", c(other_rate, gun_rate))  %>%
-  ggplot(aes(x = year, y = rate, color = Method)) +
-  geom_line(size = 1) +
-  facet_wrap(~ state)
-# Time series plot of suicides broken out by firearm/other indicates major regional differences
-# Coastal states exhibit much lower firearm rates and suggest lower overal rates as well
-
-# Check overall rates per comment above
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(subregion, year) %>%
-  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000) %>%
-  ggplot(aes(x = year, y = all_rate, color = subregion)) +
-  geom_line(size = 1) +
-  theme(legend.position = "right")
-# Does appear that coastal states have lower overall suicide rates, with the mountain region much higher,
-# which may be due to significantly lower overall population levels.
-
 
 # Plot overall suicide rates by subregion
 sui_method_df %>%
@@ -178,7 +145,57 @@ sui_method_df %>%
             other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
   ggplot(aes(x = subregion, y = all_rate, color = subregion)) +
   geom_boxplot() +
-  theme(legend.position = "right")
+  ylab("CDC Overall Suicide Rate") +
+  xlab("Year") +
+  labs(title = "Regional Suicide Rates ALL Methods", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+# Coastal states have lower overall suicide rates, with the mountain region much higher
+# which may be the result of significantly lower overall population levels.
+
+# Plot firearm vs other using line plot over time
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(subregion, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
+  gather(key = "Method", value = "rate", c(other_rate, gun_rate))  %>%
+    ggplot(aes(x = year, y = rate, color = Method)) +
+    geom_line(size = 1) +
+    facet_wrap(~ subregion) +
+    ylab("CDC Suicide Rates, Firearm & Other") +
+    xlab("Year") +
+    labs(title = "Regional Suicide Rates by Firearm vs Other Methods", 
+         subtitle = "Rate: Deaths per 100,000 Population") +
+    labs(caption = "Centers for Disease Control Data for 1999-2016") +
+    theme(legend.position = "right")
+# Time series plot of suicides broken out by firearm/other indicates major regional differences
+# Coastal states exhibit much lower firearm rates.
+
+# Run same plot as above but with many-mini view of each state
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(state, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
+  gather(key = "Method", value = "rate", c(other_rate, gun_rate))  %>%
+  ggplot(aes(x = year, y = rate, color = Method)) +
+  geom_line(size = 1) +
+  facet_wrap(~ state) +
+  ylab("CDC Suicide Rates, Firearm & Other") +
+  xlab("Year") +
+  labs(title = "State Level Suicide Rates by Firearm vs Other Methods", 
+       subtitle = "Rate: Deaths per 100,000 Population, 1999-2016") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "bottom") +
+  theme(axis.title.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.x=element_blank())
+# Nicely displays variation by state with small pop variations jumping out
 
 
 # Try plotting Firearm Suicide Rate against Other Suicide Rate
@@ -186,7 +203,13 @@ sui_method_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = gun_rate, y = other_rate, color = region)) +
   geom_point() +
-  stat_smooth(method = "lm", se = FALSE, color = "blue")
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  ylab("CDC Suicide Rate, Other Methods") +
+  xlab("CDC Suicide Rate, Firearm") +
+  labs(title = "Suicide Rates by Firearm vs Other Methods", 
+       subtitle = "Rate: Deaths per 100,000 Population, 1999-2016") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right")
 
 # Check r2 for above plot
 sui_method_df %>%
@@ -194,22 +217,7 @@ sui_method_df %>%
   summarize(N = n(), r2 = cor(other_rate, gun_rate)^2)
 # r2 = 0.077, very weak relationship as shown in plot
 
-# Check same relationship broken out by subregion
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = gun_rate, y = other_rate, color = subregion)) +
-  geom_point() +
-  stat_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~ subregion)
-
-# Check r2 for above plot
-sui_method_df %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(subregion) %>%
-  summarize(N = n(), r2 = cor(other_rate, gun_rate)^2)
-# r2 = 0.720 to 0.895, very strong relationship holds across subregions
-
-
+# Check firearm share of suicides in states w/ above average suicide rates
 sui_method_df %>%
   group_by(year) %>%
   mutate(abv_avg_rate = all_rate > mean(all_rate)) %>%
@@ -218,6 +226,30 @@ sui_method_df %>%
 # Since 1999, guns accounted for an average 58% of suicides in states with above average suicide
 # rates and 48% of suicides in states with below average rates (average rates calculated annually).
 
+# Try to plot this relationship???
+sui_method_df %>%
+  group_by(year) %>%
+  mutate(Above_Average_Suicide_Rate = all_rate > mean(all_rate)) %>%
+  group_by(year, Above_Average_Suicide_Rate) %>%
+  summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct)) %>%
+  ggplot(aes(x = year, y = avg_gun_pct, fill = Above_Average_Suicide_Rate)) +
+  geom_col() +
+  facet_wrap(~ Above_Average_Suicide_Rate, labeller = label_both) +
+  ylab("Percentage of Suicides Using Firearm") +
+  xlab("Year") +
+  labs(title = "States with Above Average Overall Suicide Rates, Percentage of Deaths by Firearm", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "none")
+# Higher suicide rate states average 10 pct point greater use of firearm as instrument of mortality
+
+# Data table for above plot
+sui_method_df %>%
+  group_by(year) %>%
+  mutate(Above_Average_Suicide_Rate = all_rate > mean(all_rate)) %>%
+  group_by(year, Above_Average_Suicide_Rate) %>%
+  summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct)) %>%
+  print(n = 36)
 
 # =======================================================================
 # 
