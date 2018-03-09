@@ -670,9 +670,89 @@ giff_grd_df %>%
 # 
 # =======================================================================
 
+# Check summary stats on lawtotal variable from 
+state_laws_df %>%
+  select(state, year, lawtotal) %>%
+  summarize(N = n(), Min = min(lawtotal), Max = max(lawtotal), Avg = mean(lawtotal), 
+            Median = median(lawtotal), IQR = IQR(lawtotal), SD = sd(lawtotal))
+# Very broad range from 3 to 104 w/ average of 24.8 and sd of 23.4
+
+# Plot overal total of laws over time period
+state_laws_df %>%
+  group_by(year) %>%
+  select(year, lawtotal) %>%
+  summarise(tot_laws = sum(lawtotal)) %>%
+  ggplot(aes(x = year, y = tot_laws)) +
+  geom_line(size = 1) +
+  ylab("Total Gun Laws") +
+  xlab("Year") +
+  labs(title = "Total Gun Law Counts Nationally, 1999-2016", 
+       subtitle = "") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom")
+# Definite regional differences and some regions decreasing gun laws
+
+# Moderate increase of 226 or 20% between 1999 and 2016
+# Sharp increases in 2000 and again in 2013/2014
+
+# Add regional layer to above plot
+state_laws_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region, year) %>%
+  select(region, year, lawtotal) %>%
+  summarise(tot_laws = sum(lawtotal)) %>%
+  ggplot(aes(x = year, y = tot_laws, color = region)) +
+  geom_line(size = 1) +
+  labs(color = "Year") +
+  ylab("Total Gun Laws") +
+  xlab("Year") +
+  labs(title = "Total Gun Law Counts by Region, 1999-2016", 
+       subtitle = "") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom")
+# Definite regional differences and some regions decreasing gun laws
+
+# Run many-mini at state level to investigate shifts
+state_laws_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region, state, year) %>%
+  select(region, state, year, lawtotal) %>%
+  summarise(tot_laws = sum(lawtotal)) %>%
+  ggplot(aes(x = year, y = tot_laws, color = region)) +
+  geom_line(size = 1) +
+  facet_wrap(~ state) +
+  theme(axis.title.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.x=element_blank()) +
+  labs(color = "Region") +
+  ylab("Total Gun Laws") +
+  xlab("Region") +
+  labs(title = "Total Gun Law Counts by State, 1999-2016", 
+       subtitle = "") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom")
+  
+# Plot allows one to see shifts in gun laws, up or down, by state over time
 
 
+# Calculate change in number of laws between 1999 and 2016, assign quartile
+law_chg_df <- state_laws_df %>%
+  select(state, year, lawtotal) %>%
+  filter(year == 1999 | year == 2016) %>%
+  spread(year, lawtotal, sep = "_") %>%
+  mutate(change = year_2016 - year_1999, chg_quant = ntile(change, 4)) %>%
+  arrange(desc(change))
 
+# Plot law change counts grouped by quartile
+law_chg_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = reorder(usps_st, -change), y = change, fill = region)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_wrap(~ chg_quant, scales = "free_y") +
+  labs(color = "Region")
+  
+  
 
 # =======================================================================
 # 
