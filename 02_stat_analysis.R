@@ -670,7 +670,7 @@ giff_grd_df %>%
 # 
 # =======================================================================
 
-# Check summary stats on lawtotal variable from 
+# Check summary stats on lawtotal variable from state law database
 state_laws_df %>%
   select(state, year, lawtotal) %>%
   summarize(N = n(), Min = min(lawtotal), Max = max(lawtotal), Avg = mean(lawtotal), 
@@ -743,28 +743,40 @@ law_chg_df <- state_laws_df %>%
   mutate(change = year_2016 - year_1999, chg_quant = ntile(change, 4)) %>%
   arrange(desc(change))
 
+# Create facet labels for plots below
+law_quant_labels <- c(
+  '1' = "1 - Reduced",
+  '2' = "2 - Unchanged",
+  '3' = "3 - Small Increase",
+  '4' = "4 - Large Increase"
+)
+
 # Plot law change counts grouped by quartile
 law_chg_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = reorder(usps_st, -change), y = change, fill = region)) +
   geom_bar(stat = "identity") +
   coord_flip() +
-  facet_wrap(~ chg_quant, scales = "free_y") +
+  facet_wrap(~ chg_quant, labeller = as_labeller(law_quant_labels), scales = "free_y") +
   labs(color = "Region")
+# Law Change grouped into four categories: Reduced, Unchanged, Sm Increase, Lg Increase
   
+# Plot total laws against firearm suicide rates
 sui_method_df %>%
   left_join(state_laws_df, by = join_key) %>%
-  ggplot(aes(x = lawtotal, y = gun_rate)) +
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
   geom_point() +
-  stat_smooth(method = "lm", se = FALSE)
+  stat_smooth(method = "lm", se = FALSE, color = "blue")
 
+# Calculate r2 for total laws against firearm suicide rates
 sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(state_laws_df, by = join_key) %>%
   summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
 # r2 of 0.546 indicates moderate relationship between gun law total and firearm suicide rate
 
-# Plot by region
+# Plot by region total laws against firearm suicide rates
 sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(state_laws_df, by = join_key) %>%
@@ -773,6 +785,7 @@ sui_method_df %>%
   geom_point() +
   facet_wrap(~ region) +
   stat_smooth(method = "lm", se = FALSE)
+# All regions exhibit negative relationship, more laws -> fewer firearm suicides
 
 # Check regional correlation
 sui_method_df %>%
@@ -784,13 +797,20 @@ sui_method_df %>%
 # r2 low of 0.371 in South, 0.571 in Midwest, 0.635 in West and 0.715 in Northeast
 
 
-# Create net fsr change to plot against net law change
+# Create Firearm Suicide Rate change 1999-2016 to plot against law change
 fsr_chg_df <- sui_method_df %>%
   select(state, yr = year, gun_rate) %>%
   filter(yr == 1999 | yr == 2016) %>%
   spread(yr, gun_rate, sep = "_") %>%
   mutate(fsr_chg = yr_2016 - yr_1999, fsr_quant = ntile(fsr_chg, 4)) %>%
   arrange(desc(fsr_chg))
+
+fsr_law_avg_df <- law_chg_df %>%
+  left_join(fsr_chg_df, by = "state") %>%
+  group_by(chg_quant) %>%
+  summarise(N = n(),  Avg_Law_Chg = mean(change), Avg_FSR_Chg = mean(fsr_chg))
+
+geom_text(data = fsr_law_avg_df, aes(label = round(Avg_FSR_Chg, 1), x = 40, y = 1.05 * Avg_FSR_Chg))
 
 
 # Plot change in firearm suicide rate grouped by law change quantiles
@@ -801,15 +821,64 @@ fsr_chg_df %>%
   filter(chg_quant %in% c(1, 2, 3, 4)) %>%
   ggplot(aes(x = reorder(usps_st, -fsr_chg), y = fsr_chg, fill = region)) +
   geom_bar(stat = "identity") +
-  facet_wrap(~ chg_quant, scale = "free_y") +
-  coord_flip() +
+  facet_wrap(~ chg_quant, labeller = as_labeller(law_quant_labels), scale = "free_x") +
+  geom_hline(data = fsr_law_avg_df, aes(yintercept = Avg_FSR_Chg), lty = 2) +
+  geom_text(data = fsr_law_avg_df, aes(label = paste("Avg = ", round(Avg_FSR_Chg, 2))), 
+            x = Inf, y = Inf, hjust = 1, vjust = 1, size = 3.5, inherit.aes = FALSE) +
+  ylab("Change in CDC Firearm Suicide Rate from 1999 to 2016") +
+  xlab("State") +
+  labs(color = "Region") +
+  labs(title = "Net Change in Firearm Suicide Rate by Change in State Gun Laws Quartile", 
+       subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "right")
 
 # Calculate average change in fsr by law change quantile
 law_chg_df %>%
-  left_join(fsr_chg_df) %>%
+  left_join(fsr_chg_df, by = "state") %>%
   group_by(chg_quant) %>%
   summarise(N = n(),  Avg_Law_Chg = mean(change), Avg_FSR_Chg = mean(fsr_chg))
+
+# Plot above data table?
+law_chg_df %>%
+  left_join(fsr_chg_df) %>%
+  group_by(chg_quant) %>%
+  summarise(N = n(), Avg_Law_Chg = mean(change), Avg_FSR_Chg = mean(fsr_chg)) %>%
+  ggplot(aes(x = Avg_Law_Chg, y = Avg_FSR_Chg, color = law_quant_labels)) +
+  geom_point(size = 5) +
+  stat_smooth(method = "lm", se = FALSE, color = "blue")  +
+  expand_limits(y = 0) +
+  ylab("Average Change in CDC Firearm Suicide Rate") +
+  xlab("Average Change in Number of Gun Laws") +
+  labs(color = "Gun Law Change") +
+  labs(title = "Average Change in Firearm Suicide Rate by Change in State Gun Laws Quartile", 
+       subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "right")
+# Plot exhibits strong relationship between quantile averages
+
+# Line plot of each quantile over period
+sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(law_chg_df, by = "state") %>%
+  select(state, year, chg_quant, gun_rate) %>%
+  group_by(chg_quant, year) %>%
+  summarize(avg_fsr = mean(gun_rate)) %>%
+  ggplot(aes(x = year, y = avg_fsr, color = as.factor(chg_quant))) +
+  geom_line(size = 1) +
+  stat_smooth(method = "lm", se = FALSE, linetype = 2) +
+  facet_grid(. ~ as.factor(chg_quant), labeller = as_labeller(law_quant_labels)) +
+  ylab("Average CDC Firearm Suicide Rate") +
+  xlab("Year") +
+  labs(color = "Gun Law Chg") +
+  labs(title = "Firearm Suicide Trend Grouped by Changes in State Gun Laws", 
+       subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "none")
+  
+
+
+head(law_chg_df)
 
 # =======================================================================
 # 
