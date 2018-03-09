@@ -752,7 +752,39 @@ law_chg_df %>%
   facet_wrap(~ chg_quant, scales = "free_y") +
   labs(color = "Region")
   
-  
+sui_method_df %>%
+  left_join(state_laws_df, by = join_key) %>%
+  ggplot(aes(x = lawtotal, y = gun_rate)) +
+  geom_point() +
+  stat_smooth(method = "lm", se = FALSE)
+
+sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_df, by = join_key) %>%
+  summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
+# r2 of 0.546 indicates moderate relationship between gun law total and firearm suicide rate
+
+# Check by region
+
+sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
+  geom_point() +
+  facet_wrap(~ region) +
+  stat_smooth(method = "lm", se = FALSE)
+
+# Check regional correlation
+
+sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
+# r2 low of 0.371 in South, 0.571 in Midwest, 0.635 in West and 0.715 in Northeast
+
 
 # =======================================================================
 # 
