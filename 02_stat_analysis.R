@@ -764,8 +764,7 @@ sui_method_df %>%
   summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
 # r2 of 0.546 indicates moderate relationship between gun law total and firearm suicide rate
 
-# Check by region
-
+# Plot by region
 sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(state_laws_df, by = join_key) %>%
@@ -776,7 +775,6 @@ sui_method_df %>%
   stat_smooth(method = "lm", se = FALSE)
 
 # Check regional correlation
-
 sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(state_laws_df, by = join_key) %>%
@@ -784,6 +782,28 @@ sui_method_df %>%
   group_by(region) %>%
   summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
 # r2 low of 0.371 in South, 0.571 in Midwest, 0.635 in West and 0.715 in Northeast
+
+
+# Create net fsr change to plot against net law change
+fsr_chg_df <- sui_method_df %>%
+  select(state, yr = year, gun_rate) %>%
+  filter(yr == 1999 | yr == 2016) %>%
+  spread(yr, gun_rate, sep = "_") %>%
+  mutate(fsr_chg = yr_2016 - yr_1999, fsr_quant = ntile(fsr_chg, 4)) %>%
+  arrange(desc(fsr_chg))
+
+
+# Plot change in firearm suicide rate grouped by law change quantiles
+fsr_chg_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(regions_df, by = "state") %>%
+  left_join(law_chg_df, by = "state") %>%
+  filter(chg_quant %in% c(1, 2, 3, 4)) %>%
+  ggplot(aes(x = reorder(usps_st, -fsr_chg), y = fsr_chg, fill = region)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ chg_quant, scale = "free_y") +
+  coord_flip() +
+  theme(legend.position = "right")
 
 
 # =======================================================================
