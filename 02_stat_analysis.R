@@ -805,6 +805,11 @@ fsr_chg_df %>%
   coord_flip() +
   theme(legend.position = "right")
 
+# Calculate average change in fsr by law change quantile
+law_chg_df %>%
+  left_join(fsr_chg_df) %>%
+  group_by(chg_quant) %>%
+  summarise(N = n(),  Avg_Law_Chg = mean(change), Avg_FSR_Chg = mean(fsr_chg))
 
 # =======================================================================
 # 
