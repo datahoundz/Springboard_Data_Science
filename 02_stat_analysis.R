@@ -805,12 +805,11 @@ fsr_chg_df <- sui_method_df %>%
   mutate(fsr_chg = yr_2016 - yr_1999, fsr_quant = ntile(fsr_chg, 4)) %>%
   arrange(desc(fsr_chg))
 
+# Creating average labels for plot below
 fsr_law_avg_df <- law_chg_df %>%
   left_join(fsr_chg_df, by = "state") %>%
   group_by(chg_quant) %>%
   summarise(N = n(),  Avg_Law_Chg = mean(change), Avg_FSR_Chg = mean(fsr_chg))
-
-geom_text(data = fsr_law_avg_df, aes(label = round(Avg_FSR_Chg, 1), x = 40, y = 1.05 * Avg_FSR_Chg))
 
 
 # Plot change in firearm suicide rate grouped by law change quantiles
@@ -824,10 +823,11 @@ fsr_chg_df %>%
   facet_wrap(~ chg_quant, labeller = as_labeller(law_quant_labels), scale = "free_x") +
   geom_hline(data = fsr_law_avg_df, aes(yintercept = Avg_FSR_Chg), lty = 2) +
   geom_text(data = fsr_law_avg_df, aes(label = paste("Avg = ", round(Avg_FSR_Chg, 2))), 
-            x = Inf, y = Inf, hjust = 1, vjust = 1, size = 3.5, inherit.aes = FALSE) +
+            x = Inf, y = fsr_law_avg_df$Avg_FSR_Chg, hjust = 1, vjust = -0.5, size = 3.2,
+            inherit.aes = FALSE) +
   ylab("Change in CDC Firearm Suicide Rate from 1999 to 2016") +
   xlab("State") +
-  labs(color = "Region") +
+  labs(fill = "Region") +
   labs(title = "Net Change in Firearm Suicide Rate by Change in State Gun Laws Quartile", 
        subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
