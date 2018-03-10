@@ -5,6 +5,7 @@ library(tidyr)
 library(dplyr)
 library(purrr)
 library(ggplot2)
+library(directlabels)
 library(lubridate)
 library(broom)
 
@@ -683,7 +684,9 @@ state_laws_df %>%
   select(year, lawtotal) %>%
   summarise(tot_laws = sum(lawtotal)) %>%
   ggplot(aes(x = year, y = tot_laws)) +
-  geom_line(size = 1) +
+  geom_line(size = 1, color = "blue") +
+  geom_dl(aes(label = max(tot_laws)), method = list("last.points", cex = 1.5, hjust = 0.5, vjust = -0.5)) +
+  geom_dl(aes(label = min(tot_laws)), method = list("first.points", cex = 1.5, hjust = 0.5, vjust = 1)) +
   ylab("Total Gun Laws") +
   xlab("Year") +
   labs(title = "Total Gun Law Counts Nationally, 1999-2016", 
@@ -740,24 +743,33 @@ law_chg_df <- state_laws_df %>%
   select(state, year, lawtotal) %>%
   filter(year == 1999 | year == 2016) %>%
   spread(year, lawtotal, sep = "_") %>%
-  mutate(change = year_2016 - year_1999, chg_quant = ntile(change, 4)) %>%
-  arrange(desc(change))
+  mutate(law_chg = year_2016 - year_1999, law_quant = ntile(law_chg, 4)) %>%
+  arrange(desc(law_chg))
 
 # Create facet labels for plots below
-law_quant_labels <- c(
+law_quant_lbl <- c(
   '1' = "1 - Reduced",
   '2' = "2 - Unchanged",
   '3' = "3 - Small Increase",
   '4' = "4 - Large Increase"
 )
 
+# Creating average labels for plot below
+fsr_law_avg_df <- law_chg_df %>%
+  left_join(fsr_chg_df, by = "state") %>%
+  group_by(law_quant) %>%
+  summarise(N = n(),  Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg))
+
 # Plot law change counts grouped by quartile
 law_chg_df %>%
   left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = reorder(usps_st, -change), y = change, fill = region)) +
+  ggplot(aes(x = reorder(usps_st, law_chg), y = law_chg, fill = region)) +
   geom_bar(stat = "identity") +
-  coord_flip() +
-  facet_wrap(~ chg_quant, labeller = as_labeller(law_quant_labels), scales = "free_y") +
+  geom_hline(data = fsr_law_avg_df, aes(yintercept = Avg_Law_Chg), lty = 2) +
+  geom_text(data = fsr_law_avg_df, aes(label = paste("Avg = ", round(Avg_Law_Chg, 2))), 
+            x = -Inf, y = fsr_law_avg_df$Avg_Law_Chg, hjust = -0.1, vjust = -0.5, size = 4,
+            inherit.aes = FALSE) +
+  facet_wrap(~ law_quant, labeller = as_labeller(law_quant_lbl), scales = "free_x") +
   labs(color = "Region")
 # Law Change grouped into four categories: Reduced, Unchanged, Sm Increase, Lg Increase
   
@@ -765,15 +777,20 @@ law_chg_df %>%
 sui_method_df %>%
   left_join(state_laws_df, by = join_key) %>%
   left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
   ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
   geom_point() +
+  geom_text(data = cor_law_fsr_all, aes(label = paste("r2 = ", round(r2, 3))), 
+            x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, size = 6,
+            inherit.aes = FALSE) +
   stat_smooth(method = "lm", se = FALSE, color = "blue")
 
 # Calculate r2 for total laws against firearm suicide rates
-sui_method_df %>%
+cor_law_fsr_all <- sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(state_laws_df, by = join_key) %>%
-  summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
+  summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2) %>%
+  print()
 # r2 of 0.546 indicates moderate relationship between gun law total and firearm suicide rate
 
 # Plot by region total laws against firearm suicide rates
@@ -784,6 +801,9 @@ sui_method_df %>%
   ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
   geom_point() +
   facet_wrap(~ region) +
+  geom_text(data = cor_law_fsr_all, aes(label = paste("r2 = ", round(r2, 3))), 
+            x = 100, y = 15, hjust = 0.5, vjust = -0.5, size = 4,
+            inherit.aes = FALSE) +
   stat_smooth(method = "lm", se = FALSE)
 # All regions exhibit negative relationship, more laws -> fewer firearm suicides
 
@@ -805,22 +825,15 @@ fsr_chg_df <- sui_method_df %>%
   mutate(fsr_chg = yr_2016 - yr_1999, fsr_quant = ntile(fsr_chg, 4)) %>%
   arrange(desc(fsr_chg))
 
-# Creating average labels for plot below
-fsr_law_avg_df <- law_chg_df %>%
-  left_join(fsr_chg_df, by = "state") %>%
-  group_by(chg_quant) %>%
-  summarise(N = n(),  Avg_Law_Chg = mean(change), Avg_FSR_Chg = mean(fsr_chg))
-
-
 # Plot change in firearm suicide rate grouped by law change quantiles
 fsr_chg_df %>%
   filter(state != "District of Columbia") %>%
   left_join(regions_df, by = "state") %>%
   left_join(law_chg_df, by = "state") %>%
-  filter(chg_quant %in% c(1, 2, 3, 4)) %>%
+  filter(law_quant %in% c(1, 2, 3, 4)) %>%
   ggplot(aes(x = reorder(usps_st, -fsr_chg), y = fsr_chg, fill = region)) +
   geom_bar(stat = "identity") +
-  facet_wrap(~ chg_quant, labeller = as_labeller(law_quant_labels), scale = "free_x") +
+  facet_wrap(~ law_quant, labeller = as_labeller(law_quant_lbl), scale = "free_x") +
   geom_hline(data = fsr_law_avg_df, aes(yintercept = Avg_FSR_Chg), lty = 2) +
   geom_text(data = fsr_law_avg_df, aes(label = paste("Avg = ", round(Avg_FSR_Chg, 2))), 
             x = Inf, y = fsr_law_avg_df$Avg_FSR_Chg, hjust = 1, vjust = -0.5, size = 3.2,
@@ -836,15 +849,15 @@ fsr_chg_df %>%
 # Calculate average change in fsr by law change quantile
 law_chg_df %>%
   left_join(fsr_chg_df, by = "state") %>%
-  group_by(chg_quant) %>%
-  summarise(N = n(),  Avg_Law_Chg = mean(change), Avg_FSR_Chg = mean(fsr_chg))
+  group_by(law_quant) %>%
+  summarise(N = n(),  Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg))
 
 # Plot above data table?
 law_chg_df %>%
   left_join(fsr_chg_df) %>%
-  group_by(chg_quant) %>%
-  summarise(N = n(), Avg_Law_Chg = mean(change), Avg_FSR_Chg = mean(fsr_chg)) %>%
-  ggplot(aes(x = Avg_Law_Chg, y = Avg_FSR_Chg, color = law_quant_labels)) +
+  group_by(law_quant) %>%
+  summarise(N = n(), Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg)) %>%
+  ggplot(aes(x = Avg_Law_Chg, y = Avg_FSR_Chg, color = law_quant_lbl)) +
   geom_point(size = 5) +
   stat_smooth(method = "lm", se = FALSE, color = "blue")  +
   expand_limits(y = 0) +
@@ -861,13 +874,13 @@ law_chg_df %>%
 sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(law_chg_df, by = "state") %>%
-  select(state, year, chg_quant, gun_rate) %>%
-  group_by(chg_quant, year) %>%
+  select(state, year, law_quant, gun_rate) %>%
+  group_by(law_quant, year) %>%
   summarize(avg_fsr = mean(gun_rate)) %>%
-  ggplot(aes(x = year, y = avg_fsr, color = as.factor(chg_quant))) +
+  ggplot(aes(x = year, y = avg_fsr, color = as.factor(law_quant))) +
   geom_line(size = 1) +
   stat_smooth(method = "lm", se = FALSE, linetype = 2) +
-  facet_grid(. ~ as.factor(chg_quant), labeller = as_labeller(law_quant_labels)) +
+  facet_grid(. ~ as.factor(law_quant), labeller = as_labeller(law_quant_lbl)) +
   ylab("Average CDC Firearm Suicide Rate") +
   xlab("Year") +
   labs(color = "Gun Law Chg") +
@@ -877,8 +890,6 @@ sui_method_df %>%
   theme(legend.position = "none")
   
 
-
-head(law_chg_df)
 
 # =======================================================================
 # 
