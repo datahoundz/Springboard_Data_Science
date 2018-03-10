@@ -685,7 +685,7 @@ state_laws_df %>%
   summarise(tot_laws = sum(lawtotal)) %>%
   ggplot(aes(x = year, y = tot_laws)) +
   geom_line(size = 1, color = "blue") +
-  geom_dl(aes(label = max(tot_laws)), method = list("last.points", cex = 1.5, hjust = 0.5, vjust = -0.5)) +
+  geom_dl(aes(label = max(tot_laws)), method = list("last.points", cex = 1.5, hjust = 0.5, vjust = -0.25)) +
   geom_dl(aes(label = min(tot_laws)), method = list("first.points", cex = 1.5, hjust = 0.5, vjust = 1)) +
   ylab("Total Gun Laws") +
   xlab("Year") +
@@ -734,17 +734,16 @@ state_laws_df %>%
        subtitle = "") +
   labs(caption = "Boston University School of Public Health: State Gun Law Database") +
   theme(legend.position = "bottom")
-  
-# Plot allows one to see shifts in gun laws, up or down, by state over time
+# Plot allows one to see shifts in gun laws, up or down, by state over time - pretty busy though
 
-
-# Calculate change in number of laws between 1999 and 2016, assign quartile
+# Calculate change in number of laws by state between 1999 and 2016, assign quartile
 law_chg_df <- state_laws_df %>%
   select(state, year, lawtotal) %>%
   filter(year == 1999 | year == 2016) %>%
   spread(year, lawtotal, sep = "_") %>%
   mutate(law_chg = year_2016 - year_1999, law_quant = ntile(law_chg, 4)) %>%
-  arrange(desc(law_chg))
+  arrange(desc(law_chg)) %>%
+  print()
 
 # Create facet labels for plots below
 law_quant_lbl <- c(
@@ -753,12 +752,6 @@ law_quant_lbl <- c(
   '3' = "3 - Small Increase",
   '4' = "4 - Large Increase"
 )
-
-# Creating average labels for plot below
-fsr_law_avg_df <- law_chg_df %>%
-  left_join(fsr_chg_df, by = "state") %>%
-  group_by(law_quant) %>%
-  summarise(N = n(),  Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg))
 
 # Plot law change counts grouped by quartile
 law_chg_df %>%
@@ -773,6 +766,14 @@ law_chg_df %>%
   labs(color = "Region")
 # Law Change grouped into four categories: Reduced, Unchanged, Sm Increase, Lg Increase
   
+# Calculate r2 for firearm suicide rates by total laws
+cor_law_fsr_all <- sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_df, by = join_key) %>%
+  summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2) %>%
+  print()
+# r2 of 0.546 indicates moderate relationship between gun law total and firearm suicide rate
+
 # Plot total laws against firearm suicide rates
 sui_method_df %>%
   left_join(state_laws_df, by = join_key) %>%
@@ -781,17 +782,27 @@ sui_method_df %>%
   ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
   geom_point() +
   geom_text(data = cor_law_fsr_all, aes(label = paste("r2 = ", round(r2, 3))), 
-            x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, size = 6,
+            x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, size = 5, color = "blue",
             inherit.aes = FALSE) +
-  stat_smooth(method = "lm", se = FALSE, color = "blue")
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  ylab("Annual CDC Firearm Suicide Rate") +
+  xlab("Number of Gun Laws by State") +
+  labs(color = "Region") +
+  labs(title = "Annual Firearm Suicide Rate by Number of State Gun Laws", 
+       subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "right")
+# Negative relationship with numerous outliers from West at higher suicide rates
 
-# Calculate r2 for total laws against firearm suicide rates
-cor_law_fsr_all <- sui_method_df %>%
+# Calculate r2 by region
+cor_law_fsr_reg <- sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(state_laws_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
   summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2) %>%
   print()
-# r2 of 0.546 indicates moderate relationship between gun law total and firearm suicide rate
+# r2 low of 0.371 in South, 0.571 in Midwest, 0.635 in West and 0.715 in Northeast
 
 # Plot by region total laws against firearm suicide rates
 sui_method_df %>%
@@ -801,29 +812,35 @@ sui_method_df %>%
   ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
   geom_point() +
   facet_wrap(~ region) +
-  geom_text(data = cor_law_fsr_all, aes(label = paste("r2 = ", round(r2, 3))), 
-            x = 100, y = 15, hjust = 0.5, vjust = -0.5, size = 4,
+  geom_text(data = cor_law_fsr_reg, aes(label = paste("r2 = ", round(r2, 3))), 
+            x = 100, y = 17.5, hjust = 0.75, vjust = -0.5, size = 3.5, color = "blue",
             inherit.aes = FALSE) +
-  stat_smooth(method = "lm", se = FALSE)
+  stat_smooth(method = "lm", se = FALSE) +
+  ylab("Annual CDC Firearm Suicide Rate") +
+  xlab("Number of Gun Laws by State") +
+  labs(color = "Region") +
+  labs(title = "Annual Firearm Suicide Rate by Number of State Gun Laws by Region", 
+       subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "right")
 # All regions exhibit negative relationship, more laws -> fewer firearm suicides
-
-# Check regional correlation
-sui_method_df %>%
-  filter(state != "District of Columbia") %>%
-  left_join(state_laws_df, by = join_key) %>%
-  left_join(regions_df, by = "state") %>%
-  group_by(region) %>%
-  summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
-# r2 low of 0.371 in South, 0.571 in Midwest, 0.635 in West and 0.715 in Northeast
-
 
 # Create Firearm Suicide Rate change 1999-2016 to plot against law change
 fsr_chg_df <- sui_method_df %>%
   select(state, yr = year, gun_rate) %>%
   filter(yr == 1999 | yr == 2016) %>%
   spread(yr, gun_rate, sep = "_") %>%
-  mutate(fsr_chg = yr_2016 - yr_1999, fsr_quant = ntile(fsr_chg, 4)) %>%
-  arrange(desc(fsr_chg))
+  mutate(fsr_chg = yr_2016 - yr_1999, fsr_quant = ntile(-fsr_chg, 4)) %>%
+  arrange(desc(fsr_chg)) %>%
+  print()
+# Use -fsr_chg so law and fsr quartiles numbers align, low law_chg to high_fsr chg
+
+# Calculate average change in fsr by law change quartile, use as labels for plots below
+fsr_law_avg_df <- law_chg_df %>%
+  left_join(fsr_chg_df, by = "state") %>%
+  group_by(law_quant) %>%
+  summarise(N = n(),  Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg)) %>%
+  print()
 
 # Plot change in firearm suicide rate grouped by law change quantiles
 fsr_chg_df %>%
@@ -845,12 +862,7 @@ fsr_chg_df %>%
        subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "right")
-
-# Calculate average change in fsr by law change quantile
-law_chg_df %>%
-  left_join(fsr_chg_df, by = "state") %>%
-  group_by(law_quant) %>%
-  summarise(N = n(),  Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg))
+# States that reduced gun laws saw average FSR increase 5X that of states that increased laws significantly 
 
 # Plot above data table?
 law_chg_df %>%
@@ -868,9 +880,9 @@ law_chg_df %>%
        subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "right")
-# Plot exhibits strong relationship between quantile averages
+# Plot exhibits relationship between quantile averages
 
-# Line plot of each quantile over period
+# Line plot of each quartile over period
 sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(law_chg_df, by = "state") %>%
@@ -888,7 +900,8 @@ sui_method_df %>%
        subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "none")
-  
+
+
 
 
 # =======================================================================
