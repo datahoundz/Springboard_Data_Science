@@ -255,12 +255,17 @@ str(state_codes_df)
 state_codes_df <- state_codes_df %>%
   select(cat_code = `Category Code`, cat = Category, sub_cat = `Sub-Category`, var_name = `Variable Name`)
 
+
 # Filter state law data for 1999-2016 period only
 state_laws_df <- state_laws_df %>%
   filter(year >= 1999 & year <= 2016)
 
 # Address issues related to large number of variables in state_laws_df
+# Create simplified table with total laws for general analysis
+state_laws_total_df <- state_laws_df %>%
+  select(state, year, lawtotal)
 
+# Create a second simplified table with category totals using state codes data
 # View category names for var_name lookup
 unique(state_codes_df$cat)
 
