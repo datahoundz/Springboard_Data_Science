@@ -21,6 +21,22 @@ options(scipen = 999, digits = 3)
 
 # Run basic stats on CDC Homicide and Suicide Rates
 
+# Plot total numbers of firearm suicides & homicides to highlight problem at start
+gun_deaths_df %>%
+  group_by(year) %>%
+  summarise(Homicide = sum(hom_cnt), Suicide = sum(sui_cnt)) %>%
+  gather(key = "Firearm_Death", value = "Deaths", c(Homicide, Suicide)) %>%
+  ggplot(aes(x = year, y = Deaths, color = Firearm_Death)) +
+  geom_line(size = 1.5) +
+  expand_limits(y = 0) +
+  ylab("Annual CDC Firearm Fatality Totals") +
+  xlab("Year") +
+  labs(color = "Firearm Deaths") +
+  labs(title = "CDC Annual Firearm Deaths, Homicide vs Suicide", 
+       subtitle = "National Totals 1999-2016") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right")
+
 # Statistical summary for Homicide rates
 gun_deaths_df %>%
   ungroup(state) %>%
