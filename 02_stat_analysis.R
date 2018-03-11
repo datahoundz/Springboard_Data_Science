@@ -882,17 +882,17 @@ law_chg_df %>%
   left_join(fsr_chg_df) %>%
   group_by(law_quant) %>%
   summarise(N = n(), Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg)) %>%
-  ggplot(aes(x = Avg_Law_Chg, y = Avg_FSR_Chg, color = law_quant_lbl)) +
-  geom_point(size = 5) +
-  stat_smooth(method = "lm", se = FALSE, color = "blue")  +
-  expand_limits(y = 0) +
+  ggplot(aes(x = law_quant_lbl, y = Avg_FSR_Chg, fill = as.factor(round(Avg_Law_Chg)))) +
+  geom_bar(stat = "identity") +
+  geom_dl(aes(label = paste("+", round(Avg_FSR_Chg, 2), " Deaths/100K")), 
+          method = list("last.points", cex = 1, hjust = 0.5, vjust = -0.25)) +
   ylab("Average Change in CDC Firearm Suicide Rate") +
-  xlab("Average Change in Number of Gun Laws") +
-  labs(color = "Gun Law Change") +
-  labs(title = "Average Change in Firearm Suicide Rate by Change in State Gun Laws Quartile", 
+  xlab("Change in Number of Gun Laws") +
+  labs(fill = "Avg Law Change") +
+  labs(title = "Average Change in Firearm Suicide Rate by State Gun Law Change Quartile", 
        subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
-  theme(legend.position = "right")
+  theme(legend.position = "bottom")
 # Plot exhibits relationship between quantile averages
 
 # Line plot of each quartile over period
@@ -922,7 +922,7 @@ sui_method_df %>%
   left_join(regions_df, by = "state") %>%
   left_join(law_chg_df, by = "state") %>%
   filter(law_quant == 1) %>%
-  ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
+  ggplot(aes(x = lawtotal, y = gun_rate, color = -year)) +
   geom_point() +
   facet_wrap(~ state) +
   geom_text(aes(label = paste("Law Change = ", law_chg)), 
@@ -947,7 +947,7 @@ sui_method_df %>%
   left_join(regions_df, by = "state") %>%
   left_join(law_chg_df, by = "state") %>%
   filter(law_quant == 4) %>%
-  ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
+  ggplot(aes(x = lawtotal, y = gun_rate, color = -year)) +
   geom_point() +
   facet_wrap(~ state) +
   geom_text(aes(label = paste("Law Change = ", law_chg)), 
@@ -962,7 +962,7 @@ sui_method_df %>%
        subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "right")
-# Two states saw sharp suicide increases in spite of added gun laws.
+# Two states, Colorado and Delaware, saw sharp suicide increases in spite of added gun laws.
 # A few more expeienced a more modest rise, while others were nearly flat or fell.
 # Again, this is all occurring as overal national suicide rates climbed from 10.5 to 14 per 100,000
 
