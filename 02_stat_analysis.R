@@ -222,7 +222,7 @@ sui_method_df %>%
   labs(fill = "Subregion") +
   ylab("CDC Overall Suicide Rate") +
   xlab("State") +
-  labs(title = "Subegional Suicide Rates ALL Methods Grouped by Population Quantile", 
+  labs(title = "Overall Suicide Rates by State Grouped by Population Quantile", 
        subtitle = "Rate: Deaths per 100,000 Population") +
   labs(caption = "Centers for Disease Control Data for 1999-2016") +
   theme(legend.position = "right")
@@ -306,11 +306,11 @@ sui_method_df %>%
   group_by(year, Above_Average_Suicide_Rate) %>%
   summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct)) %>%
   ggplot(aes(x = year, y = avg_gun_pct, fill = Above_Average_Suicide_Rate)) +
-  geom_col() +
-  facet_wrap(~ Above_Average_Suicide_Rate, labeller = label_both) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ifelse(Above_Average_Suicide_Rate, "Above Average Suicide Rate", "Below Average Suicide Rate")) +
   ylab("Percentage of Suicides Using Firearm") +
   xlab("Year") +
-  labs(title = "States with Above Average Overall Suicide Rates, Percentage of Deaths by Firearm", 
+  labs(title = "Percentage of Deaths by Firearm, Partition States by Above/Below Average Overall Suicide Rates", 
        subtitle = "Rate: Deaths per 100,000 Population") +
   labs(caption = "Centers for Disease Control Data for 1999-2016") +
   theme(legend.position = "none")
@@ -332,16 +332,16 @@ sui_method_df %>%
 
 # Run general statistical summary
 gun_own_2013_df %>%
-  summarize(N = n(), Min = min(own_rate), Max = max(own_rate), AvgScore = mean(own_rate), 
+  summarize(N = n(), Min = min(own_rate), Max = max(own_rate), Avg = mean(own_rate), 
             Median = median(own_rate), IQR = IQR(own_rate), SD = sd(own_rate))
 
-# AVerage ownership rate of 33% ranging from 5% to 61.7%
+# Average ownership rate of 33% ranging from 5% to 61.7%
 
 # Add geographical layer to check ownership rate by region
 gun_own_2013_df %>%
   left_join(regions_df, by = "state") %>%
-  group_by(region) %>%
-  summarize(N = n(), Min = min(own_rate), Max = max(own_rate), AvgScore = mean(own_rate), 
+  group_by(subregion) %>%
+  summarize(N = n(), Min = min(own_rate), Max = max(own_rate), Avg = mean(own_rate), 
             Median = median(own_rate), IQR = IQR(own_rate), SD = sd(own_rate))
 
 # Below average rates in Northeast, above average in West and South - regional dynamic again.
