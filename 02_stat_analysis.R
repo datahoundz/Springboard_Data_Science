@@ -93,7 +93,15 @@ gun_deaths_df %>%
   labs(caption = "Centers for Disease Control Data for 1999-2016") +
   theme(legend.position = "none")
 
-# Plot Suicide Rate by Homicide Rate 
+# Run correlation on Homicide vs Suicide relationship
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ungroup(state) %>%
+  summarize(N = n(), r2 = cor(sui_rate, hom_rate)^2)
+# At r2 of 0.0168, close to zero relationship between homicide and suicide
+
+# Plot Suicide Rate by Homicide Rate with two-letter state, colored by region 
 gun_deaths_df %>%
   left_join(regions_df, by = "state") %>%
   filter(usps_st != "DC") %>%
@@ -108,15 +116,7 @@ gun_deaths_df %>%
   labs(caption = "Centers for Disease Control Data for 1999-2016; DC excluded to avoid skewing of scale.") +
   theme(legend.position = "right")
 
-# Run correlation on Homicide vs Suicide relationship
-gun_deaths_df %>%
-  left_join(regions_df, by = "state") %>%
-  filter(usps_st != "DC") %>%
-  ungroup(state) %>%
-  summarize(N = n(), r2 = cor(sui_rate, hom_rate)^2)
-# At r2 of 0.0168, close to zero relationship between homicide and suicide
-
-# Check state rates of suicides - homicides, assess greater risk
+# Check state rates of suicides - rates homicides, assess greater risk
 gun_deaths_df %>%
   left_join(regions_df, by = "state") %>%
   filter(usps_st != "DC") %>%
@@ -166,19 +166,25 @@ gun_deaths_df %>%
 # =============================================================================
 
 # Create new suicide method table and calculate pct of suicides by gun
-sui_method_df <- all_suicides_df %>%
+sui_method_df <-  all_suicides_df %>%
   left_join(gun_deaths_df, by = join_key) %>%
   select(state, year, pop, all_cnt = all_sui_cnt, all_rate = all_sui_rate, gun_cnt = sui_cnt, gun_rate = sui_rate) %>%
   mutate(gun_pct = gun_cnt/all_cnt, other_cnt = all_cnt - gun_cnt, other_rate = all_rate - gun_rate)
+summary(sui_method_df)
+# Table reveals wildly disparate data across all categories. Investigate on subregion level per indications from plot above.
 
 head(sui_method_df)
 summary(sui_method_df)
+class(sui_method_df)
+class(regions_df)
 
+# Plot displaying overall suicide rate trend nationally
 sui_method_df %>%
   group_by(year) %>%
   summarize(all_rate = weighted.mean(all_rate, pop)) %>%
   ggplot(aes(x = year, y = all_rate)) +
-  geom_line()
+  geom_line(size = 1) +
+  expand_limits(y = 0)
 
 
 # Plot overall suicide rates by subregion
@@ -211,6 +217,7 @@ sui_method_df %>%
     ggplot(aes(x = year, y = rate, color = Method)) +
     geom_line(size = 1) +
     facet_wrap(~ subregion) +
+    expand_limits(y = 0) +
     ylab("CDC Suicide Rates, Firearm & Other") +
     xlab("Year") +
     labs(title = "Regional Suicide Rates by Firearm vs Other Methods", 
@@ -911,23 +918,6 @@ law_chg_df %>%
   theme(legend.position = "bottom")
 # Plot exhibits relationship between quantile averages
 
-# Trying to decide between bar and line plot for Avg FSR by Avg Law Change
-law_chg_df %>%
-  left_join(fsr_chg_df) %>%
-  group_by(law_quant) %>%
-  summarise(N = n(), Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg)) %>%
-  ggplot(aes(x = Avg_Law_Chg, y = Avg_FSR_Chg, color = law_quant_lbl)) +
-  geom_point(size = 5) +
-  stat_smooth(method = "lm", se = FALSE, color = "blue")  +
-  expand_limits(y = 0) +
-  ylab("Average Change in CDC Firearm Suicide Rate") +
-  xlab("Average Change in Number of Gun Laws") +
-  labs(color = "Gun Law Change") +
-  labs(title = "Average Change in Firearm Suicide Rate by State Gun Law Change Quartile", 
-       subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
-  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
-  theme(legend.position = "right")
-
 # Line plot of each quartile over period
 sui_method_df %>%
   filter(state != "District of Columbia") %>%
@@ -999,102 +989,4 @@ sui_method_df %>%
 # A few more expeienced a more modest rise, while others were nearly flat or fell.
 # Again, this is all occurring as overal national suicide rates climbed from 10.5 to 14 per 100,000
 
-
-# =======================================================================
-# 
-# Statistical Analysis - Guns & Ammo Analysis  ## PROBABLY EXCLUDE ##
-# 
-# =======================================================================
-
-# Check relationship between Guns & Ammo Rank and Giffords Death Rank
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(giff_grd_df, by = join_key) %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = gun_ammo_rnk, y = death_rnk, label = usps_st, color = region)) +
-  geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(color = "Region") +
-  ylab("Giffords Gun Death Rank") +
-  xlab("Guns & Ammo Best States Rank") +
-  labs(title = "Guns & Ammo: Best States for Gun Owners by Gun Death Rank", 
-       subtitle = "1 = Best, 50 = Worst") +
-  labs(caption = "Based on 2015 rankings from Guns & Ammo and Giffords Law Center") +
-  theme(legend.position = "right")
-
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(giff_grd_df, by = join_key) %>%
-  summarize(N = n(), r2 = cor(death_rnk, gun_ammo_rnk)^2)
-
-# r2 = 0.409 indicating modearate but still significant negative relationship
-# between Guns & Ammo ranking of Best States for Gun Owners and the Giffords
-# death rank.
-
-
-# Run G&A Rank against CDC Firearm Homicide Rate
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(gun_deaths_df, by = join_key) %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = gun_ammo_rnk, y = hom_rate, label = usps_st, color = region)) +
-  geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(color = "Region") +
-  ylab("CDC Firearm Homicide Rate") +
-  xlab("Guns & Ammo Best States Rank") +
-  labs(title = "Guns & Ammo: Best States for Gun Owners by CDC Firearm Homicide Rate", 
-       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
-  labs(caption = "Based on 2015 data from Guns & Ammo and Centers for Disease Control") +
-  theme(legend.position = "right")
-
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(gun_deaths_df, by = join_key) %>%
-  summarize(N = n(), r2 = cor(hom_rate, gun_ammo_rnk)^2)
-
-# No apparent correlation between G&A rank and firearm homicide rate, r2 of 0.059
-
-# Run G&A Rank against CDC Firearm Suicide Rates
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(gun_deaths_df, by = join_key) %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = gun_ammo_rnk, y = sui_rate, label = usps_st, color = region)) +
-  geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE, colour = "blue") +
-  labs(color = "Region") +
-  ylab("CDC Firearm Suicide Rate") +
-  xlab("Guns & Ammo Best States Rank") +
-  labs(title = "Guns & Ammo: Best States for Gun Owners by CDC Firearm Suicide Rate", 
-       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
-  labs(caption = "Based on 2015 data from Guns & Ammo and Centers for Disease Control") +
-  theme(legend.position = "right")
-
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(gun_deaths_df, by = join_key) %>%
-  summarize(N = n(), r2 = cor(sui_rate, gun_ammo_rnk)^2)
-# r2 = 0.466
-
-# Significant correlation between G&A rank and firearm suicide rate, r2 of 0.466
-
-# Add regional facet to investigate geographical influences
-gun_ammo_df %>%
-  filter(year == 2015) %>%
-  left_join(gun_deaths_df, by = join_key) %>%
-  left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = gun_ammo_rnk, y = sui_rate, label = usps_st, color = region)) +
-  geom_text(position = "jitter") +
-  stat_smooth(method = "lm", se = FALSE) +
-  facet_grid(. ~ region) +
-  labs(color = "Region") +
-  ylab("CDC Firearm Suicide Rate") +
-  xlab("Guns & Ammo Best States Rank") +
-  labs(title = "Guns & Ammo: Best States for Gun Owners by CDC Firearm Suicide Rate", 
-       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
-  labs(caption = "Based on 2015 data from Guns & Ammo and Centers for Disease Control") +
-  theme(legend.position = "none")
-
-# Sharp regional contrasts emerge once more
 
