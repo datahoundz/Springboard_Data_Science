@@ -194,17 +194,38 @@ sui_method_df %>%
   summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
             gun_rate = sum(gun_cnt)/sum(pop) * 100000,
             other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
-  ggplot(aes(x = subregion, y = all_rate, color = subregion)) +
+  ggplot(aes(x = subregion, y = all_rate, fill = subregion)) +
   geom_boxplot() +
+  labs(fill = "Subregion") +
   ylab("CDC Overall Suicide Rate") +
   xlab("Year") +
-  labs(title = "Regional Suicide Rates ALL Methods", 
+  labs(title = "Subregional Suicide Rates ALL Methods", 
        subtitle = "Rate: Deaths per 100,000 Population") +
   labs(caption = "Centers for Disease Control Data for 1999-2016") +
   theme(legend.position = "right") +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 # Coastal states have lower overall suicide rates, with the mountain region much higher
 # which may be the result of significantly lower overall population levels.
+
+# Run subregion overall suicide boxplots grouped by population quantiles to check for population effect.
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(subregion, usps_st, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000,
+            avg_suicides = mean(all_cnt),
+            avg_pop = mean(pop)) %>%
+  ggplot(aes(x = reorder(usps_st, -all_rate), y = all_rate, fill = subregion)) +
+  geom_boxplot() +
+  facet_wrap(~ ntile(avg_pop, 4), scales = "free_x") +
+  labs(fill = "Subregion") +
+  ylab("CDC Overall Suicide Rate") +
+  xlab("State") +
+  labs(title = "Subegional Suicide Rates ALL Methods Grouped by Population Quantile", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right")
 
 # Plot firearm vs other using line plot over time
 sui_method_df %>%
