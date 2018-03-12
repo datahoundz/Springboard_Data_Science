@@ -1,0 +1,460 @@
+---
+title: "Statistical Analysis Summary"
+author: "Jim Scotland"
+date: "March 11, 2018"
+output: 
+  html_document: 
+    fig_caption: yes
+    fig_height: 7
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=TRUE, include=FALSE, paged.print=FALSE}
+library(xml2)
+library(readxl)
+library(readr)
+library(tidyr)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(directlabels)
+library(lubridate)
+library(broom)
+
+# Set options to limit sci notation and decimal places
+options(scipen = 999, digits = 3)
+
+# =======================================================================
+# 
+# Code Needed to Load Analysis Datasets
+# Complete r file for data import available here:
+# Springboard_Data_Science/01_data_import.R
+# 
+# =======================================================================
+
+# Data accessed at
+# https://wonder.cdc.gov/
+
+# Import CDC Suicide Data (edited version with additional footer data deleted) 
+suicides_df <- read_tsv("data_edited/CDC_FirearmSuicide_1999-2016.txt")
+
+# Remove duplicate/empty columns, make Rate numeric
+suicides_df$Notes <- NULL
+suicides_df$'State Code' <- NULL
+suicides_df$'Year Code' <- NULL
+suicides_df$`Crude Rate` <- as.numeric(suicides_df$`Crude Rate`)
+
+# Standardize and sepcify variable names (plan to merge w/ homicide data)
+suicides_df <- suicides_df %>%
+  rename(state = State) %>%
+  rename(year = Year) %>%
+  rename(sui_cnt = Deaths) %>%
+  rename(sui_pop = Population) %>%
+  rename(sui_rate = 'Crude Rate')
+
+# DC & RI too few for calculation, replace NA w/ calculation
+suicides_df <- mutate(suicides_df, sui_rate = ifelse(is.na(sui_rate), round(sui_cnt / sui_pop * 100000, 1), sui_rate))
+
+# Repeat process w/ appropriate variable adjustments for homicide data
+homicides_df <- read_tsv("data_edited/CDC_FirearmHomicide_1999-2016.txt")
+
+head(homicides_df)
+
+homicides_df$Notes <- NULL
+homicides_df$'State Code' <- NULL
+homicides_df$'Year Code' <- NULL
+homicides_df$`Crude Rate` <- as.numeric(homicides_df$`Crude Rate`)
+
+homicides_df <- homicides_df %>%
+  rename(state = State) %>%
+  rename(year = Year) %>%
+  rename(hom_cnt = Deaths) %>%
+  rename(hom_pop = Population) %>%
+  rename(hom_rate = 'Crude Rate')
+
+# Same issue as suicides data - replace NA hom_rate w/ calculation
+homicides_df <- mutate(homicides_df, hom_rate = ifelse(is.na(hom_rate), round(hom_cnt / hom_pop * 100000, 1), hom_rate))
+
+# Import CDC Population Data (baseline for joining suicide/homicide data)
+population_df <- read_tsv("data_edited/CDC_PopEst_1990-2016.txt")
+head(population_df)
+
+# Similar adjustments for population table
+population_df$Notes <- NULL
+population_df$`Yearly July 1st Estimates Code` <- NULL
+population_df$`State Code` <- NULL
+
+population_df <- population_df %>%
+  rename(state = State) %>%
+  rename(year = `Yearly July 1st Estimates`) %>%
+  rename(pop = Population)
+  
+# Filter for Years applicable to available CDC data
+population_df <- population_df %>%
+  filter(year >= 1999)
+
+# =======================================================================
+# 
+# Data Merge - CDC Suicides, CDC Homicides, CDC Population
+# 
+# =======================================================================
+
+# Create standard join key variable for most common table join 
+join_key <- c("state", "year")
+
+# Join Population base table w/ homicides and suicides tables
+gun_deaths_df <- left_join(population_df, homicides_df, by = join_key) %>%
+  left_join(suicides_df, by = join_key) %>%
+  select(-hom_pop, -sui_pop)
+
+# Replace NA in Suicides/Homicides with Mean for respective State
+# Calculate hom_rate and sui_rate to replace NA values 
+gun_deaths_df <- gun_deaths_df %>%
+  group_by(state) %>%
+  mutate(hom_cnt = ifelse(is.na(hom_cnt), as.integer(mean(hom_cnt, na.rm = TRUE)), hom_cnt)) %>%
+  mutate(sui_cnt = ifelse(is.na(sui_cnt), as.integer(mean(sui_cnt, na.rm = TRUE)), sui_cnt)) %>%
+  mutate(hom_rate = ifelse(is.na(hom_rate), round(hom_cnt / pop * 100000, 1), hom_rate)) %>% 
+  mutate(sui_rate = ifelse(is.na(sui_rate), round(sui_cnt / pop * 100000, 1), sui_rate))
+
+# =======================================================================
+# 
+# Import Region/Subregion data to join on State for higher level analysis
+# 
+# =======================================================================
+
+# Regional data information accessed at
+# https://www2.census.gov/geo/docs/maps-data/maps/reg_div.txt
+
+regions_df <- read_excel("data_edited/State_FIPS_Codes.xlsx")
+
+# Convert code fields to integer
+regions_df$fips_st <- as.integer(regions_df$fips_st)
+regions_df$reg_code <- as.integer(regions_df$reg_code)
+regions_df$subreg_code <- as.integer(regions_df$subreg_code)
+
+# Create region and subregion fields w/ code+name for sorting/labeling purposes
+regions_df <- regions_df %>%
+  unite(region, reg_code, reg_name, sep = "-", remove = FALSE) %>%
+  unite(subregion, subreg_code, subreg_name, sep = "-", remove = FALSE)
+
+# =======================================================================
+# 
+# Import Boston University School of Public Health Gun Law Data
+# 
+# =======================================================================
+
+# Data accessed at
+# https://www.statefirearmlaws.org/table.html
+
+state_laws_df <- read.csv("data_edited/state_gun_law_database.csv")
+state_codes_df <- read_xlsx("data_edited/state_gun_laws_codebook.xlsx")
+
+# Clean up category names in State Firearm Codes
+state_codes_df <- state_codes_df %>%
+  select(cat_code = `Category Code`, cat = Category, sub_cat = `Sub-Category`, var_name = `Variable Name`)
+
+# Filter state law data for 1999-2016 period only
+state_laws_df <- state_laws_df %>%
+  filter(year >= 1999 & year <= 2016)
+
+# Create simplified table with total laws for general analysis
+state_laws_total_df <- state_laws_df %>%
+  select(state, year, lawtotal)
+
+# Collapse 134 individual variables in to 14 larger category groupings
+laws_cat_df <- state_laws_df %>%
+  mutate(deal_reg = dealer + dealerh + recordsall + recordsdealerh + recordsall + 
+           reportdealer + reportdealerh + reportall + reportallh + purge + residential + 
+           theft + security + inspection + liability + junkgun) %>%
+  mutate(buy_reg = waiting + waitingh + permit + permith + permitlaw + fingerprint +
+           training + registration + registrationh + defactoreg + defactoregh + age21handgunsale + 
+           age18longgunsale + age21longgunsale + age21longgunsaled + loststolen + onepermonth) %>%
+  mutate(high_risk = felony + violent + violenth + violentpartial + invcommitment + 
+           invoutpatient + danger + drugmisdemeanor + alctreatment + alcoholism) %>%
+  mutate(bkgrnd_chk = universal + universalh + gunshow + gunshowh + universalpermit + universalpermith + 
+           backgroundpurge + threedaylimit + mentalhealth + statechecks + statechecksh) %>%
+  mutate(ammo_reg = ammlicense + ammrecords + ammpermit + ammrestrict + amm18 +
+           amm21h + ammbackground) %>%
+  mutate(poss_reg = age21handgunpossess + age18longgunpossess + age21longgunpossess + 
+           gvro + gvrolawenforcement + college + collegeconcealed + elementary + opencarryh +
+           opencarryl + opencarrypermith + opencarrypermitl) %>%
+  mutate(conceal_reg = permitconcealed + mayissue + showing + ccrevoke + ccbackground +
+           ccbackgroundnics + ccrenewbackground) %>%
+  mutate(assault_mag = assault + onefeature + assaultlist + assaultregister + assaulttransfer +
+           magazine + tenroundlimit + magazinepreowned) %>%
+  mutate(child_acc = lockd + lockp + lockstandards + locked + capliability + capaccess +
+           capuses + capunloaded + cap18 + cap16 + cap14) %>%
+  mutate(gun_traff = traffickingbackground + traffickingprohibited + traffickingprohibitedh +
+           strawpurchase + strawpurchaseh + microstamp + personalized) %>%
+  mutate(stnd_grnd = nosyg) %>%
+  mutate(pre_empt = preemption + preemptionbroad + preemptionnarrow) %>%
+  mutate(immunity_ = immunity) %>%
+  mutate(dom_viol = mcdv + mcdvdating + mcdvsurrender + mcdvsurrendernoconditions +
+           mcdvsurrenderdating + mcdvremovalallowed + mcdvremovalrequired + incidentremoval +
+           incidentall + dvro) %>%
+  select(state, year, contains("_"))
+
+# =======================================================================
+# 
+# Import Giffords Law Center Gun Law Data
+# 
+# =======================================================================
+
+# Data accessed at 
+# http://lawcenter.giffords.org/
+
+# Import Giffords Law Center data, compiled in CSV from website data
+giff_grd_df <- read.csv("data_edited/giffords_gunlawscorecard.csv")
+
+# Import LetterGardeConverter to translate letter to numeric grade
+grd_conv_df <- read.csv("data_edited/LetterGradeConverter.csv")
+
+# Reverse numerical ordering of death_rnk to 1 for Fewest 50 for Most
+# More intuitive to have rank on both reflect greater safety
+giff_grd_df <- giff_grd_df %>%
+  mutate(death_rnk = 51 - death_rnk)
+
+# Calculate numerical grade from grd_conv_df table, re-arrange table
+giff_grd_df <- giff_grd_df %>%
+  left_join(grd_conv_df, by = c("law_grd" = "Letter")) %>%
+  select(state, year, law_grd, law_score = GPA, law_rnk, death_rnk, bkgrnd_chk) %>%
+  arrange(state, year)
+
+# Create aggreagte data table w/ avg scores and ranks by state
+giff_agg_df <- giff_grd_df %>%
+  group_by(state) %>%
+  summarise(avg_score = round(mean(law_score), 2), avg_law_rnk = round(mean(law_rnk), 2), 
+            avg_death_rnk = round(mean(death_rnk), 2), avg_bkgrnd = round(mean(bkgrnd_chk), 2))
+
+# =======================================================================
+# 
+# Import CDC Suicide Data ALL METHODS
+# 
+# =======================================================================
+
+# Data accessed at
+# https://wonder.cdc.gov/
+
+# Import CDC Suicide Data, ALL METHODS (edited version with additional footer data deleted) 
+all_suicides_df <- read_tsv("data_edited/CDC_AllSuicides_State_1999-2016.txt")
+
+# Remove duplicate/empty columns, make Rate numeric
+all_suicides_df$Notes <- NULL
+all_suicides_df$'State Code' <- NULL
+all_suicides_df$'Year Code' <- NULL
+all_suicides_df$`Crude Rate` <- as.numeric(all_suicides_df$`Crude Rate`)
+
+# Standardize and sepcify variable names (plan to merge w/ homicide data)
+all_suicides_df <- all_suicides_df %>%
+  rename(state = State) %>%
+  rename(year = Year) %>%
+  rename(all_sui_cnt = Deaths) %>%
+  rename(all_sui_pop = Population) %>%
+  rename(all_sui_rate = 'Crude Rate')
+
+# That's all for the data importing.
+
+```
+
+
+### CDC Firearm Homicide & Suicide Data  
+
+#### Plot total numbers of firearm suicides & homicides to highlight problem at the start.  
+
+```{r gun_deaths}
+gun_deaths_df %>%
+  group_by(year) %>%
+  summarise(Homicide = sum(hom_cnt), Suicide = sum(sui_cnt)) %>%
+  gather(key = "Firearm_Death", value = "Deaths", c(Homicide, Suicide)) %>%
+  ggplot(aes(x = year, y = Deaths, color = Firearm_Death)) +
+  geom_line(size = 1.5) +
+  expand_limits(y = 0) +
+  ylab("Annual CDC Firearm Fatality Totals") +
+  xlab("Year") +
+  labs(color = "Firearm Deaths") +
+  labs(title = "CDC Annual Firearm Deaths, Homicide vs Suicide", 
+       subtitle = "National Totals 1999-2016") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right")
+```
+  
+
+Total firearm suicides far exceed firearm homicides and have climbed steadily since around 2006 to a total of just under 23,000.  
+  
+  
+
+#### Basic Statistical summary for Firearm Homicide rates for 1999-2016  
+```{r stat_sum_homicides}
+gun_deaths_df %>%
+  ungroup(state) %>%
+  summarize(N = n(), Min = min(hom_rate), Max = max(hom_rate), Avg = mean(hom_rate), 
+            Median = median(hom_rate), IQR = IQR(hom_rate), SD = sd(hom_rate))
+```
+Max of 30.7 stems from exceedingly high DC rates noted on import, will filter out DC for plots to avoid skewing of y-axis.  
+  
+  
+
+#### Same summary for Firearm Suicide rates  
+```{r stat_sum_suicides}
+gun_deaths_df %>%
+  ungroup(state) %>%
+  summarize(N = n(), Min = min(sui_rate), Max = max(sui_rate), Avg = mean(sui_rate), 
+            Median = median(sui_rate), IQR = IQR(sui_rate), SD = sd(sui_rate))
+```
+Average firearm suicide rate is nearly 2X the average firearm homicide rate.  
+  
+  
+
+#### Run correlation on Homicide vs Suicide to check for linear relationship.  
+```{r cor_homicide_suicide}
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ungroup(state) %>%
+  summarize(N = n(), r2 = cor(sui_rate, hom_rate)^2)
+```
+At r2 of 0.0168, close to zero relationship between homicide and suicide rates.  
+  
+  
+
+#### Plot Suicide Rate by Homicide Rate with two-letter state, colored by region and best-fit regression line.  
+```{r hom_vs_sui_scatter}
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ggplot(aes(x = hom_rate, y = sui_rate, color = region, label = usps_st)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("CDC Firearm Homicide Rate") +
+  labs(title = "Firearm Suicide Rates by Firearm Homicide Rates", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016; DC excluded to avoid skewing of scale.") +
+  theme(legend.position = "right")
+```
+  
+
+Plot reveals highest homicide rates in the South (LA and MS), highest suicide rates in the West (WY, MT and AK) and large clusters of low rates for both in the Northeast (CT, RI, NY and NJ). 
+  
+  
+
+#### Check state level "rates of suicides - rates of homicides".
+```{r state_sui-hom_rates}
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  group_by(region, usps_st) %>%
+  summarise(Avg_Suicide_Rate = mean(sui_rate), Avg_Homicide_Rate = mean(hom_rate),
+            Suicide_Homicide_Diff = Avg_Suicide_Rate - Avg_Homicide_Rate) %>%
+  arrange(desc(Suicide_Homicide_Diff), desc(usps_st)) %>%
+  select(region, usps_st, Suicide_Homicide_Diff) %>%
+  ggplot(aes(x = reorder(usps_st, -Suicide_Homicide_Diff), y = Suicide_Homicide_Diff, fill = region)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_wrap(~ region, scales = "free_y") +
+  labs(color = "Region") +
+  ylab("Avg Firearm Suicide Rate Minus Avg Firearm Homicide Rate") +
+  xlab("State") +
+  labs(title = "Assessing the Greater Gun Threat: Firearm Suicides vs Firearm Homicides", 
+       subtitle = "Bars Indicate Amount by which Suicide Rate Exceeds Homicide Rate") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016; DC excluded to avoid skewing of scale.") +
+  theme(legend.position = "none")
+```
+  
+
+Firearm homicide rates exceed firearm suicide rates in only 6 of 50 states. The largest rate differentials appear in several western states, suggesting regional influences. Turn focus to firearm suicides only.  
+  
+  
+
+#### Create table distinguishing gun suicides vs other suicides.
+```{r echo=TRUE}
+sui_method_df <- all_suicides_df %>%
+  left_join(gun_deaths_df, by = join_key) %>%
+  select(state, year, pop, all_cnt = all_sui_cnt, all_rate = all_sui_rate, 
+         gun_cnt = sui_cnt, gun_rate = sui_rate) %>%
+  mutate(gun_pct = gun_cnt/all_cnt, 
+         other_cnt = all_cnt - gun_cnt, 
+         other_rate = all_rate - gun_rate)
+summary(sui_method_df)
+```
+  
+Table reveals wildly disparate data across all categories. Investigate on subregion level per indications from plot above.  
+  
+  
+
+#### Boxplot OVERALL Suicide Rates Across Sub-Regions
+```{r sui_all_subregion_box}
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(subregion, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
+  ggplot(aes(x = subregion, y = all_rate, color = subregion)) +
+  geom_boxplot() +
+  ylab("CDC Overall Suicide Rate") +
+  xlab("Year") +
+  labs(title = "Regional Suicide Rates ALL Methods", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+  
+Coastal states have lower overall suicide rates, with the mountain region much higher which may be a partial result of significantly lower overall population levels.  
+  
+  
+#### Lineplot of Suicide Rates by Method Across Sub-Regions
+```{r}
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(subregion, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
+  gather(key = "Method", value = "rate", c(other_rate, gun_rate))  %>%
+    ggplot(aes(x = year, y = rate, color = Method)) +
+    geom_line(size = 1) +
+    facet_wrap(~ subregion) +
+    expand_limits(y = 0) +
+    ylab("CDC Suicide Rates, Firearm & Other") +
+    xlab("Year") +
+    labs(title = "Regional Suicide Rates by Firearm vs Other Methods", 
+         subtitle = "Rate: Deaths per 100,000 Population") +
+    labs(caption = "Centers for Disease Control Data for 1999-2016") +
+    theme(legend.position = "right")
+```
+  
+Time series plot of suicides broken out by firearm/other indicates major regional differences. Coastal states exhibit much lower firearm rates at levels that appear more steady compared to other methods and other states.  
+  
+  
+#### Many-Mini Plot of Suicide Rates by Method at State Level
+```{r}
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(state, year) %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000) %>%
+  gather(key = "Method", value = "rate", c(other_rate, gun_rate))  %>%
+  ggplot(aes(x = year, y = rate, color = Method)) +
+  geom_line(size = 1) +
+  facet_wrap(~ state) +
+  ylab("CDC Suicide Rates, Firearm & Other") +
+  xlab("Year") +
+  labs(title = "State Level Suicide Rates by Firearm vs Other Methods", 
+       subtitle = "Rate: Deaths per 100,000 Population, 1999-2016") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "bottom") +
+  theme(axis.title.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.x=element_blank())
+
+```
+  
+Displays variation by state with large variations in small population states jumping out.
+
