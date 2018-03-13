@@ -23,6 +23,7 @@ library(ggplot2)
 library(directlabels)
 library(lubridate)
 library(broom)
+library(scales)
 
 # Set options to limit sci notation and decimal places
 options(scipen = 999, digits = 3)
@@ -284,6 +285,7 @@ gun_deaths_df %>%
   ggplot(aes(x = year, y = Deaths, color = Firearm_Death)) +
   geom_line(size = 1.5) +
   expand_limits(y = 0) +
+  scale_y_continuous(labels = comma) +
   ylab("Annual CDC Firearm Fatality Totals") +
   xlab("Year") +
   labs(color = "Firearm Deaths") +
@@ -371,7 +373,7 @@ gun_deaths_df %>%
 ##### Firearm homicide rates exceed firearm suicide rates in only 6 of 50 states. The largest rate differentials appear in several western states, suggesting regional influences. Turn focus to firearm suicides only.  
 
 #### Create table distinguishing gun suicides vs other suicides
-```{r echo=TRUE}
+```{r sui_method_df, echo=TRUE}
 sui_method_df <- all_suicides_df %>%
   left_join(gun_deaths_df, by = join_key) %>%
   select(state, year, pop, all_cnt = all_sui_cnt, all_rate = all_sui_rate, 
@@ -407,6 +409,13 @@ sui_method_df %>%
 
 #### Boxplot of OVERALL State Suicide Rates Grouped by Population Quartile
 ```{r sui_all_state_box_popq}
+pop_labels <- c(
+      '1' = "Low Population",
+      '2' = "Moderate Low Population",
+      '3' = "Moderate High Population",
+      '4' = "High Population"
+)
+
 sui_method_df %>%
   left_join(regions_df, by = "state") %>%
   group_by(subregion, usps_st, year) %>%
@@ -417,7 +426,7 @@ sui_method_df %>%
             avg_pop = mean(pop)) %>%
   ggplot(aes(x = reorder(usps_st, -all_rate), y = all_rate, fill = subregion)) +
   geom_boxplot() +
-  facet_wrap(~ ntile(avg_pop, 4), scales = "free_x") +
+  facet_wrap(~ ntile(avg_pop, 4), scales = "free_x", labeller = as_labeller(pop_labels)) +
   labs(fill = "Subregion") +
   ylab("CDC Overall Suicide Rate") +
   xlab("State") +
@@ -427,7 +436,7 @@ sui_method_df %>%
   theme(legend.position = "right")
 ```
   
-##### Plot dispels issues of small Mountain states population driving higher suicide rates. Mountain states post highest overall suicide rates across all four population quartiles.  
+##### Plot dispels issues of small population Mountain states driving higher suicide rates. Mountain states post highest overall suicide rates across all four population quartiles.  
 
 #### Lineplot of Suicide Rates by Method Across Subregions
 ```{r subreg_sui_method}
@@ -488,24 +497,6 @@ sui_method_df %>%
   
 ##### Since 1999, guns accounted for an average 58% of suicides in states with above average suicide rates and 48% of suicides in states with below average rates (average rates calculated annually).  
 
-#### Plot of Percentage Suicides Using Firearm, States Partitioned into Above/Below Average Suicide Rate
-```{r plot_gunpct}
-sui_method_df %>%
-  group_by(year) %>%
-  mutate(Above_Average_Suicide_Rate = all_rate > mean(all_rate)) %>%
-  group_by(year, Above_Average_Suicide_Rate) %>%
-  summarise(n = n(), deaths = sum(all_cnt), avg_gun_pct = mean(gun_pct)) %>%
-  ggplot(aes(x = year, y = avg_gun_pct, fill = Above_Average_Suicide_Rate)) +
-  geom_bar(stat = "identity") +
-  facet_wrap(~ifelse(Above_Average_Suicide_Rate, "Above Average Suicide Rate", "Below Average Suicide Rate")) +
-  ylab("Percentage of Suicides Using Firearm") +
-  xlab("Year") +
-  labs(title = "Percentage of Deaths by Firearm, Partition States by Above/Below Average Overall Suicide Rates", 
-       subtitle = "Rate: Deaths per 100,000 Population") +
-  labs(caption = "Centers for Disease Control Data for 1999-2016") +
-  theme(legend.position = "none")
-```
-
 ### Gun Ownership Rates  
 
 #### Statistical Summary of National Gun Ownerhip Rates
@@ -535,6 +526,7 @@ gun_own_2013_df %>%
   ggplot(aes(x = region, y = own_rate, color = region, label = usps_st)) +
   geom_boxplot() +
   geom_text(position = "jitter") +
+  scale_y_continuous(labels = function(x) paste0(x*100, "%")) +
   labs(color = "Region") +
   ylab("Gun Ownership Rate") +
   xlab("Region") +
@@ -555,6 +547,7 @@ gun_deaths_df %>%
   ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
   geom_text() +
   stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  scale_x_continuous(labels = function(x) paste0(x*100, "%")) +
   labs(color = "Region") +
   ylab("CDC Firearm Suicide Rate (2013)") +
   xlab("Gun Ownership Rate") +
@@ -578,7 +571,7 @@ gun_deaths_df %>%
   
   
 #### Regression Plot FIREARM Suicide Rate (FSR) vs Gun Ownership Rate by Region
-```{r}
+```{r lr_ownrate_v_fsr_reg}
 gun_deaths_df %>%
   filter(year == 2013) %>%
   left_join(gun_own_2013_df, by = "state") %>%
@@ -586,6 +579,7 @@ gun_deaths_df %>%
   ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
   geom_text() +
   stat_smooth(method = "lm", se = FALSE) +
+  scale_x_continuous(labels = function(x) paste0(x*100, "%")) +
   facet_grid(. ~ region)  +
   labs(color = "Region") +
   ylab("CDC Firearm Suicide Rate (2013)") +
@@ -597,7 +591,7 @@ gun_deaths_df %>%
 ```
   
 #### Regression Calculations
-```{r lr_ownrate_fsr_reg echo=FALSE}
+```{r lr_ownrate_fsr_reg, echo=FALSE}
 gun_deaths_df %>%
   filter(year == 2013) %>%
   left_join(gun_own_2013_df, by = "state") %>%
@@ -607,5 +601,458 @@ gun_deaths_df %>%
 ```
   
 ##### The r2 values range from 0.360 in Midwest to 0.487 in South. The lack of ownership data creates limitations.  
+
+#### Firearm Suicide Rates Grouped by Ownership Rate Tier
+```{r own_rate_tier_fsr}
+own_rate_labels <- c(
+    '1' = "Low",
+    '2' = "Medium",
+    '3' = "High"
+)
+
+# Firearm suicide rates grouped by ownership rate
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(year == 2013) %>%
+  inner_join(gun_own_2013_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ggplot(aes(x = reorder(usps_st, -sui_rate), y = sui_rate, fill = region)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_grid(. ~ ntile(own_rate, 3), labeller = as_labeller(own_rate_labels)) +
+  labs(fill = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("State") +
+  labs(title = "States Ranked by Firearm Suicide Rate, Grouped by Gun Ownership Tier", 
+       subtitle = "Tier 1 = Low, Tier 2 = Med, Tier 3 = High, Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "Data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
+```
   
+##### Plot supports strong connection between gun ownership rates and higher firearm suicide levels.
+
+### Giffords Law Center Rankings
+
+#### Basic Histogram of Giffords Law Grades
+```{r giff_grd_hist, message=FALSE, warning=FALSE}
+giff_grd_df %>%
+  ggplot(aes(x = law_score)) +
+  geom_histogram() +
+  scale_x_reverse() +
+  facet_grid(. ~ year) +
+  ylab("States (n)") +
+  xlab("Giffords Gun Law Grade (GPA Scale)") +
+  labs(title = "Distribution of Giffords Gun Law Grades", subtitle = "GPA Scale: 4 = A, 0 = F") +
+  labs(caption = "Giffords Law Center Data for 2014-2016")
+```
+##### Failing grades clearly dominate the distribution.  
+
+#### Statistical Summary by Region, Year  
+```{r giff_summary_regyr, echo=FALSE, message=FALSE, warning=FALSE}
+giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region, year) %>%
+  summarize(N = n(), Min = min(law_score), Max = max(law_score), AvgScore = mean(law_score),
+            Median = median(law_score), IQR = IQR(law_score), SD = sd(law_score))
+```
+
+
+#### Mofified Histogram of Giffords Law Grades
+```{r mod_giff_hist, message=FALSE, warning=FALSE}
+giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(reg_code >= 0) %>%
+  ggplot(aes(x = law_grd, y = death_rnk, label = usps_st, color = region)) +
+  geom_text() +
+  facet_grid(. ~ year) +
+  labs(color = "Region") +
+  ylab("State Gun Death Rank") +
+  xlab("Giffords Gun Law Grade") +
+  labs(title = "Giffords Gun Law Grades Plotted by Gun Death Rank",
+       subtitle = "Rank: 1 = Best, 50 = Worst, Gun Death Rankings Include Homicide and Suicide Deaths") +
+  labs(caption = "Giffords Law Center Data for 2014-2016")
+```
+  
+##### Modified histogram highlights F scores and worse Death Rank dominated by South and West. Of the 20 worst death rankings, between 18 and 20 had a law grade of F over three years.  
+
+#### Gun Death Rank by Gun Law Rank Across Region and Year
+```{r giff_law_vs_death, message=FALSE, warning=FALSE}
+giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = law_rnk, y = death_rnk, label = usps_st, color = region)) +
+  facet_grid(year ~ region) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE) +
+  expand_limits(y = 0) +
+  labs(color = "Region") +
+  ylab("State Gun Death Rank") +
+  xlab("State Gun Law Rank") +
+  labs(title = "Giffords Regional Gun Death Rank by Gun Law Rank", 
+       subtitle = "1 = Best, 50 = Worst, Gun Death Rankings Include Homicide and Suicide Deaths") +
+  theme(legend.position = "none") +
+  labs(caption = "Giffords Law Center Data for 2014-2016")
+```
+  
+##### Clear regional variations supported by calculated r2 values.
+```{r giff_law_vs_death_r2, echo=FALSE, fig.height=5, fig.width=5, message=FALSE, warning=FALSE}
+giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), r2 = cor(law_rnk, death_rnk)^2)
+```
+  
+##### Regression lines and r2 values support the existence of strong regional variation.  
+  
+### Giffords Law Rankings & CDC Firearm Suicides  
+  
+#### CDC Firearm Suicide Rate by Gun Law Rank Across Region and Year
+```{r giff_law_vs_fsr, message=FALSE, warning=FALSE}
+giff_grd_df %>%
+  filter(year >= 2014) %>%
+  left_join(gun_deaths_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = law_rnk, y = sui_rate, label = usps_st, color = region)) +
+  geom_text(position = "jitter") +
+  stat_smooth(method = "lm", se = FALSE) +
+  facet_grid(year ~ region) +
+  expand_limits(y = 0) +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("Giffords Gun Law Rank") +
+  labs(title = "Giffords Gun Law Rank by CDC Firearm Suicide Rate", 
+       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
+  labs(caption = "Based on 2015 data from Giffords Law Center and Centers for Disease Control") +
+  theme(legend.position = "none")
+```
+  
+##### Plot bears strong resemblence to similar plot for Gun Death Rank, with some notable variations.  
+
+#### Regression Calculation Overall 
+```{r giff_fsr_r2_all, echo=FALSE, fig.width=5, message=FALSE, warning=FALSE}
+giff_grd_df %>%
+  filter(year >= 2014) %>%
+  left_join(gun_deaths_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  summarize(N = n(), r2 = cor(sui_rate, law_rnk)^2)
+
+```
+#### Regression Calculation Regional   
+```{r giff_fsr_r2_reg, echo=FALSE, fig.width=6, message=FALSE, warning=FALSE}
+
+giff_grd_df %>%
+  filter(year >= 2014) %>%
+  left_join(gun_deaths_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), r2 = cor(sui_rate, law_rnk)^2)
+```
+
+##### Northeast shows strongest relationship between rank and firearm suicide rate with r2 of 0.816 while the overall r2 of 0.594 indicates a solid relationship across all regions.  
+
+#### Overall Suicide Rates by Giffords F Grade
+```{r giff_f_allsui_setup, message=FALSE, warning=FALSE, include=FALSE}
+sui_method_df %>%
+  filter(year == 2016) %>%
+  summarize(avg_all_rate = mean(all_rate))
+```
+
+```{r giff_f_allsui, message=FALSE, warning=FALSE}
+sui_method_df %>%
+  filter(year == 2016) %>%
+  mutate(Abv_Average_Rate = all_rate > mean(all_rate)) %>%
+  gather(key = "cause", value = "rate", c(other_rate, gun_rate))  %>%
+  left_join(regions_df, value = "state") %>%
+  inner_join(giff_grd_df, by = join_key) %>%
+  mutate(Giffords_F = law_score == 0) %>%
+    ggplot(aes(x = reorder(usps_st, all_rate), y = rate, fill = cause)) +
+    facet_grid(Giffords_F ~ Abv_Average_Rate, labeller = label_both, scales = "free_y") +
+    geom_col() +
+    geom_hline(linetype = 2, aes(yintercept = mean(all_rate))) +
+    coord_flip() +
+    labs(fill = "Suicide Rate") +
+    ylab("Suicide Rate (2016)") +
+    xlab("State") +
+    labs(title = "Overall Suicide Rates and States Scoring F on Giffords Gun Law Grade", 
+         subtitle = "True/False Panels: Above Average Suicide Rate and Giffords Grade of F, Dashed Line Indicates Average") +
+    labs(caption = "Giffords Law Center & Centers for Disease Control Data for 2016") +
+    theme(legend.position = "right")
+```
+
+##### Table Count for Plot Above  
+```{r giff_tbl_cnt, echo=FALSE, message=FALSE, warning=FALSE}
+sui_method_df %>%
+  filter(year == 2016) %>%
+  mutate(other_rate = all_rate - gun_rate, Abv_Average_Rate = all_rate > mean(all_rate)) %>%
+  inner_join(giff_grd_df, by = join_key) %>%
+  mutate(Giffords_F = law_score == 0) %>%
+  select(Giffords_F, Abv_Average_Rate) %>%
+  table()
+```
+
+##### Out of 50 states, 41 Abv Avg Suicide ratings were indicated correctly by Gifford F. Displayed data for 2016. Slightly lower accuracy in 2014 and 2015 at 38/50 each.  
+
+### BU Public Health State Firearm Law Data
+
+#### Regional Gun Law Totals 1999-2016
+```{r bu_lawtot_reg, message=FALSE, warning=FALSE}
+state_laws_total_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region, year) %>%
+  select(region, year, lawtotal) %>%
+  summarise(tot_laws = sum(lawtotal)) %>%
+  ggplot(aes(x = year, y = tot_laws, color = region)) +
+  geom_line(size = 1) +
+  labs(color = "Year") +
+  ylab("Total Gun Laws") +
+  xlab("Year") +
+  labs(title = "Total Gun Law Counts by Region, 1999-2016", 
+       subtitle = "") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom")
+```
+  
+##### Definite regional differences and some regions decreasing gun laws.  
+
+#### Summary Statistics by Region
+```{r bu_statsum_reg, echo=FALSE, fig.width=6, message=FALSE, warning=FALSE}
+state_laws_total_df %>%
+  left_join(regions_df, by = "state") %>%
+  select(region, year, lawtotal) %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(lawtotal), Max = max(lawtotal), Avg = mean(lawtotal), 
+            Median = median(lawtotal), IQR = IQR(lawtotal), SD = sd(lawtotal))
+```
+  
+##### The Northeast clearly has the strongest laws overall but also the widest spread. Figures for the West appear to be skewed higher by just a few states with an Avg of 23.3 but a median of only 11.
+
+#### Many-Mini Plot of Law Totals by State 1999-2016
+```{r many_mini_lawtotals, message=FALSE, warning=FALSE}
+state_laws_total_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region, state, year) %>%
+  select(region, state, year, lawtotal) %>%
+  summarise(tot_laws = sum(lawtotal)) %>%
+  ggplot(aes(x = year, y = tot_laws, color = region)) +
+  geom_line(size = 1) +
+  facet_wrap(~ state) +
+  theme(axis.title.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.x=element_blank()) +
+  labs(color = "Region") +
+  ylab("Total Gun Laws") +
+  xlab("Region") +
+  labs(title = "Total Gun Law Counts by State, 1999-2016", 
+       subtitle = "") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom")
+```
+
+
+#### Net Change in Gun Law Counts by State  
+```{r law_netchg_setup, message=FALSE, warning=FALSE, include=FALSE}
+law_chg_df <- state_laws_total_df %>%
+  select(state, year, lawtotal) %>%
+  filter(year == 1999 | year == 2016) %>%
+  spread(year, lawtotal, sep = "_") %>%
+  mutate(law_chg = year_2016 - year_1999, law_quant = ntile(law_chg, 4)) %>%
+  arrange(desc(law_chg)) %>%
+  print()
+
+law_quant_lbl <- c(
+  '1' = "1 - Reduced",
+  '2' = "2 - Unchanged",
+  '3' = "3 - Small Increase",
+  '4' = "4 - Large Increase"
+)
+
+fsr_chg_df <- sui_method_df %>%
+  select(state, yr = year, gun_rate) %>%
+  filter(yr == 1999 | yr == 2016) %>%
+  spread(yr, gun_rate, sep = "_") %>%
+  mutate(fsr_chg = yr_2016 - yr_1999, fsr_quant = ntile(-fsr_chg, 4)) %>%
+  arrange(desc(fsr_chg)) %>%
+  print()
+
+fsr_law_avg_df <- law_chg_df %>%
+  left_join(fsr_chg_df, by = "state") %>%
+  group_by(law_quant) %>%
+  summarise(N = n(),  Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg))
+```
+
+```{r law_netchg_plot}
+law_chg_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = reorder(usps_st, law_chg), y = law_chg, fill = region)) +
+  geom_bar(stat = "identity") +
+  geom_hline(data = fsr_law_avg_df, aes(yintercept = Avg_Law_Chg), lty = 2) +
+  geom_text(data = fsr_law_avg_df, aes(label = paste("Avg = ", round(Avg_Law_Chg, 2))), 
+            x = -Inf, y = fsr_law_avg_df$Avg_Law_Chg, hjust = -0.1, vjust = -0.5, size = 4,
+            inherit.aes = FALSE) +
+  facet_wrap(~ law_quant, labeller = as_labeller(law_quant_lbl), scales = "free_x") +
+  labs(fill = "Region") +
+  ylab("Net Change in State Gun Laws") +
+  xlab("State") +
+  labs(title = "Net Change in Gun Law Counts by State, 1999-2016", 
+       subtitle = "Grouped into Quartiles by Net Change") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom") +
+  labs(color = "Region")
+```
+
+### State Firearm Law Data vs CDC Firearm Suicide Rates  
+
+#### Annual Firearm Suicide Rate by Number of State Gun Laws  
+```{r fsr_vs_lawtotal_all, message=FALSE, warning=FALSE}
+cor_law_fsr_all <- sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_total_df, by = join_key) %>%
+  summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
+
+sui_method_df %>%
+  left_join(state_laws_total_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
+  geom_point() +
+  geom_text(data = cor_law_fsr_all, aes(label = paste("r2 = ", round(r2, 3))), 
+            x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, size = 5, color = "blue",
+            inherit.aes = FALSE) +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  ylab("Annual CDC Firearm Suicide Rate") +
+  xlab("Number of Gun Laws by State") +
+  labs(color = "Region") +
+  labs(title = "Annual Firearm Suicide Rate by Number of State Gun Laws", 
+       subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "right")
+```
+  
+#### Firearm Suicide Rate by Gun Laws by Region  
+```{r fsr_vs_lawtotal_reg, message=FALSE, warning=FALSE}
+cor_law_fsr_reg <- sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_total_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region) %>%
+  summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2)
+
+sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_total_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
+  geom_point() +
+  facet_wrap(~ region) +
+  geom_text(data = cor_law_fsr_reg, aes(label = paste("r2 = ", round(r2, 3))), 
+            x = 100, y = 17.5, hjust = 0.75, vjust = -0.25, size = 3.5, color = "blue",
+            inherit.aes = FALSE) +
+  stat_smooth(method = "lm", se = FALSE) +
+  ylab("Annual CDC Firearm Suicide Rate") +
+  xlab("Number of Gun Laws by State") +
+  labs(color = "Region") +
+  labs(title = "Annual Firearm Suicide Rate by Number of State Gun Laws by Region", 
+       subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "right")
+```
+  
+##### All regions exhibit negative relationship, more laws -> lower firearm suicide rates.  
+  
+#### Firearm Suicide Rate Grouped by Law Change Quartile  
+```{r fsrchg_lawchg_qrt, message=FALSE, warning=FALSE}
+fsr_chg_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(regions_df, by = "state") %>%
+  left_join(law_chg_df, by = "state") %>%
+  filter(law_quant %in% c(1, 2, 3, 4)) %>%
+  ggplot(aes(x = reorder(usps_st, -fsr_chg), y = fsr_chg, fill = region)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ law_quant, labeller = as_labeller(law_quant_lbl), scale = "free_x") +
+  geom_hline(data = fsr_law_avg_df, aes(yintercept = Avg_FSR_Chg), lty = 2) +
+  geom_text(data = fsr_law_avg_df, aes(label = paste("Avg = ", round(Avg_FSR_Chg, 2))), 
+            x = Inf, y = fsr_law_avg_df$Avg_FSR_Chg, hjust = 1, vjust = -0.5, size = 3.2,
+            inherit.aes = FALSE) +
+  ylab("Change in CDC Firearm Suicide Rate from 1999 to 2016") +
+  xlab("State") +
+  labs(fill = "Region") +
+  labs(title = "Net Change in Firearm Suicide Rate by Change in State Gun Laws Quartile", 
+       subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "right")
+```
+  
+#### Barplot of Average FSR Change by Law Change Quartile  
+```{r message=FALSE, warning=FALSE}
+law_chg_df %>%
+  left_join(fsr_chg_df) %>%
+  group_by(law_quant) %>%
+  summarise(N = n(), Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg)) %>%
+  ggplot(aes(x = law_quant_lbl, y = Avg_FSR_Chg, fill = as.factor(round(Avg_Law_Chg)))) +
+  geom_bar(stat = "identity") +
+  geom_dl(aes(label = paste("+", round(Avg_FSR_Chg, 2), " Deaths/100K")), 
+          method = list("last.points", cex = 1, hjust = 0.5, vjust = -0.25)) +
+  ylab("Average Change in CDC Firearm Suicide Rate") +
+  xlab("Change in Number of Gun Laws") +
+  labs(fill = "Avg Law Change") +
+  labs(title = "Average Change in Firearm Suicide Rate by State Gun Law Change Quartile", 
+       subtitle = "Rate: Deaths per 100,000 Population, Quartiles by Change in Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "bottom")
+```
+  
+##### States that reduced gun laws saw average FSR increase 5X that of states that increased laws significantly.  
+#### States that Reduced Gun Restrictions: FSR by Reduction in Laws  
+```{r reduced_state_plots, message=FALSE, warning=FALSE}
+sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_total_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  left_join(law_chg_df, by = "state") %>%
+  filter(law_quant == 1) %>%
+  ggplot(aes(x = lawtotal, y = gun_rate, color = -year)) +
+  geom_point() +
+  facet_wrap(~ state) +
+  geom_text(aes(label = paste("Law Change = ", law_chg)), 
+            x = 17, y = 17, hjust = 0.6, vjust = 1, size = 3.5, color = "blue",
+            inherit.aes = TRUE) +
+  stat_smooth(method = "lm", se = FALSE) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0,18)) +
+  ylab("Annual CDC Firearm Suicide Rate") +
+  xlab("Number of Gun Laws by State") +
+  labs(color = "Region") +
+  labs(title = "Firearm Suicide Rates for States that Reduced Gun Laws", 
+       subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "right")
+```
+  
+##### Every state that reduced gun laws experienced an increase in firearm suicides. However, it should be noted that nationally suicide rates rose from 10.5 to almost 14 per 100,000 during this time period.  
+
+#### States that Sharply Increased Gun Restrictions: FSR by Increase in Laws  
+```{r increased_state_plots, message=FALSE, warning=FALSE}
+sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(state_laws_total_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  left_join(law_chg_df, by = "state") %>%
+  filter(law_quant == 4) %>%
+  ggplot(aes(x = lawtotal, y = gun_rate, color = -year)) +
+  geom_point() +
+  facet_wrap(~ state) +
+  geom_text(aes(label = paste("Law Change = ", law_chg)), 
+            x = 70, y = 17, hjust = 0.5, vjust = 1, size = 3.5, color = "blue",
+            inherit.aes = TRUE) +
+  stat_smooth(method = "lm", se = FALSE) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0,18)) +
+  ylab("Annual CDC Firearm Suicide Rate") +
+  xlab("Number of Gun Laws by State") +
+  labs(color = "Region") +
+  labs(title = "Firearm Suicide Rates for States that Significantly Increased Gun Laws", 
+       subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
+  labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
+  theme(legend.position = "right")
+```
+  
+##### Two states, Colorado and Delaware, saw sharp suicide increases in spite of added gun laws. A few more expeienced a more modest rise, while others were nearly flat or fell. Again, this is all occurring as overall national suicide rates climbed from 10.5 to 14 per 100,000.
+
 
