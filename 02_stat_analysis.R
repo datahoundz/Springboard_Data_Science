@@ -8,6 +8,7 @@ library(ggplot2)
 library(directlabels)
 library(lubridate)
 library(broom)
+library(scales)
 
 # Set options to limit sci notation and decimal places
 options(scipen = 999, digits = 3)
@@ -29,6 +30,7 @@ gun_deaths_df %>%
   ggplot(aes(x = year, y = Deaths, color = Firearm_Death)) +
   geom_line(size = 1.5) +
   expand_limits(y = 0) +
+  scale_y_continuous(labels = comma) +
   ylab("Annual CDC Firearm Fatality Totals") +
   xlab("Year") +
   labs(color = "Firearm Deaths") +
@@ -207,6 +209,13 @@ sui_method_df %>%
 # Coastal states have lower overall suicide rates, with the mountain region much higher
 # which may be the result of significantly lower overall population levels.
 
+pop_labels <- c(
+      '1' = "Low Population",
+      '2' = "Moderate Low Population",
+      '3' = "Moderate High Population",
+      '4' = "High Population"
+)
+
 # Run subregion overall suicide boxplots grouped by population quantiles to check for population effect.
 sui_method_df %>%
   left_join(regions_df, by = "state") %>%
@@ -218,7 +227,7 @@ sui_method_df %>%
             avg_pop = mean(pop)) %>%
   ggplot(aes(x = reorder(usps_st, -all_rate), y = all_rate, fill = subregion)) +
   geom_boxplot() +
-  facet_wrap(~ ntile(avg_pop, 4), scales = "free_x") +
+  facet_wrap(~ ntile(avg_pop, 4), scales = "free_x", labeller = as_labeller(pop_labels)) +
   labs(fill = "Subregion") +
   ylab("CDC Overall Suicide Rate") +
   xlab("State") +
@@ -467,6 +476,12 @@ gun_deaths_df %>%
 # r2 ranges from 0.360 in Midwest to 0.487 in South, lack of data a problem 
 
 
+own_rate_labels <- c(
+    '1' = "Low",
+    '2' = "Medium",
+    '3' = "High"
+)
+
 # Firearm suicide rates grouped by ownership rate
 gun_deaths_df %>%
   left_join(regions_df, by = "state") %>%
@@ -476,13 +491,14 @@ gun_deaths_df %>%
   ggplot(aes(x = reorder(usps_st, -sui_rate), y = sui_rate, fill = region)) +
   geom_bar(stat = "identity") +
   coord_flip() +
-  facet_grid(. ~ ntile(own_rate, 3)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  facet_grid(. ~ ntile(own_rate, 3), labeller = as_labeller(own_rate_labels)) +
   labs(fill = "Region") +
   ylab("CDC Firearm Suicide Rate (2013)") +
   xlab("State") +
   labs(title = "States Ranked by Firearm Suicide Rate, Grouped by Gun Ownership Tier", 
        subtitle = "Tier 1 = Low, Tier 2 = Med, Tier 3 = High, Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  labs(caption = "Data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "bottom")
 # Plot supports strong connection between gun ownership rates and higher firearm suicide levels 
 
@@ -501,7 +517,8 @@ giff_grd_df %>%
   facet_grid(. ~ year) +
   ylab("States (n)") +
   xlab("Giffords Gun Law Grade (GPA Scale)") +
-  labs(title = "Distribution of Giffords Gun Law Grades", subtitle = "GPA Scale: 4 = A, 0 = F")
+  labs(title = "Distribution of Giffords Gun Law Grades", subtitle = "GPA Scale: 4 = A, 0 = F") +
+  labs(caption = "Giffords Law Center Data for 2014-2016")
   
 # Distribution is heavily left skewed with half of all states receiving a score of 0 or F.
 
@@ -523,7 +540,8 @@ giff_grd_df %>%
   labs(color = "Region") +
   ylab("State Gun Death Rank") +
   xlab("Giffords Gun Law Grade") +
-  labs(title = "Giffords Gun Law Grades Plotted by Gun Death Rank", subtitle = "Rank: 1 = Best, 50 = Worst")
+  labs(title = "Giffords Gun Law Grades Plotted by Gun Death Rank", subtitle = "Rank: 1 = Best, 50 = Worst") +
+  labs(caption = "Giffords Law Center Data for 2014-2016")
 
 # Modified histogram highlights F scores and worse Death Rank dominated by South and West.
 # Of the 20 worst death rankings, between 18 and 20 had a law grade of F over three years.
@@ -571,7 +589,8 @@ giff_grd_df %>%
   ylab("State Gun Death Rank") +
   xlab("State Gun Law Rank") +
   labs(title = "Giffords Gun Death Rank by Gun Law Rank", 
-       subtitle = "1 = Best, 50 = Worst, Regional Regression Lines")
+       subtitle = "1 = Best, 50 = Worst, Regional Regression Lines") +
+  labs(caption = "Giffords Law Center Data for 2014-2016")
 
 # Clear distinction between regions jumps out from regression lines. 
 
@@ -588,7 +607,8 @@ giff_grd_df %>%
   xlab("State Gun Law Rank") +
   labs(title = "Giffords Regional Gun Death Rank by Gun Law Rank", 
        subtitle = "1 = Best, 50 = Worst") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  labs(caption = "Giffords Law Center Data for 2014-2016")
 
 # Added regional facet increases readability and clearly highlights regional distinctions.
 
@@ -723,7 +743,9 @@ giff_grd_df %>%
 
 # Check summary stats on lawtotal variable from state law database
 state_laws_total_df %>%
-  select(state, year, lawtotal) %>%
+  left_join(regions_df, by = "state") %>%
+  select(region, year, lawtotal) %>%
+  group_by(region) %>%
   summarize(N = n(), Min = min(lawtotal), Max = max(lawtotal), Avg = mean(lawtotal), 
             Median = median(lawtotal), IQR = IQR(lawtotal), SD = sd(lawtotal))
 # Very broad range from 3 to 104 w/ average of 24.8 and sd of 23.4
@@ -735,6 +757,7 @@ state_laws_total_df %>%
   summarise(tot_laws = sum(lawtotal)) %>%
   ggplot(aes(x = year, y = tot_laws)) +
   geom_line(size = 1, color = "blue") +
+  scale_y_continuous(labels = comma) +
   geom_dl(aes(label = max(tot_laws)), method = list("last.points", cex = 1.5, hjust = 0.5, vjust = -0.25)) +
   geom_dl(aes(label = min(tot_laws)), method = list("first.points", cex = 1.5, hjust = 0.5, vjust = 1)) +
   ylab("Total Gun Laws") +
@@ -764,6 +787,14 @@ state_laws_total_df %>%
   labs(caption = "Boston University School of Public Health: State Gun Law Database") +
   theme(legend.position = "bottom")
 # Definite regional differences and some regions decreasing gun laws
+
+# Calculate region level statistics
+state_laws_total_df %>%
+  left_join(regions_df, by = "state") %>%
+  select(region, year, lawtotal) %>%
+  group_by(region) %>%
+  summarize(N = n(), Min = min(lawtotal), Max = max(lawtotal), Avg = mean(lawtotal), 
+            Median = median(lawtotal), IQR = IQR(lawtotal), SD = sd(lawtotal))
 
 # Run many-mini at state level to investigate shifts
 state_laws_total_df %>%
@@ -813,6 +844,13 @@ law_chg_df %>%
             x = -Inf, y = fsr_law_avg_df$Avg_Law_Chg, hjust = -0.1, vjust = -0.5, size = 4,
             inherit.aes = FALSE) +
   facet_wrap(~ law_quant, labeller = as_labeller(law_quant_lbl), scales = "free_x") +
+  labs(fill = "Region") +
+  ylab("Net Change in State Gun Laws") +
+  xlab("State") +
+  labs(title = "Net Change in Gun Law Counts by State, 1999-2016", 
+       subtitle = "Grouped into Quartiles by Net Change") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom") +
   labs(color = "Region")
 # Law Change grouped into four categories: Reduced, Unchanged, Sm Increase, Lg Increase
   
