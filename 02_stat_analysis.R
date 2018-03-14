@@ -9,6 +9,9 @@ library(directlabels)
 library(lubridate)
 library(broom)
 library(scales)
+library(ggmap)
+library(maps)
+library(mapdata)
 
 # Set options to limit sci notation and decimal places
 options(scipen = 999, digits = 3)
@@ -107,12 +110,17 @@ gun_deaths_df %>%
 gun_deaths_df %>%
   left_join(regions_df, by = "state") %>%
   filter(usps_st != "DC") %>%
+  group_by(region, usps_st) %>%
+  summarise(hom_rate = mean(hom_rate), sui_rate = mean(sui_rate)) %>%
   ggplot(aes(x = hom_rate, y = sui_rate, color = region, label = usps_st)) +
   geom_text() +
   stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  expand_limits(y = 0, x = 0) +
+  geom_vline(linetype = 2, color = "red", xintercept = 3.75) +
+  geom_hline(linetype = 2, color = "red", yintercept = 7.50) +
   labs(color = "Region") +
-  ylab("CDC Firearm Suicide Rate") +
-  xlab("CDC Firearm Homicide Rate") +
+  ylab("Average CDC Firearm Suicide Rate") +
+  xlab("Average CDC Firearm Homicide Rate") +
   labs(title = "Firearm Suicide Rates by Firearm Homicide Rates", 
        subtitle = "Rate: Deaths per 100,000 Population") +
   labs(caption = "Centers for Disease Control Data for 1999-2016; DC excluded to avoid skewing of scale.") +
@@ -863,27 +871,32 @@ law_chg_df %>%
 
 # Calculate r2 for firearm suicide rates by total laws
 cor_law_fsr_all <- sui_method_df %>%
-  filter(state != "District of Columbia") %>%
   left_join(state_laws_total_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  group_by(state) %>%
+  summarize(lawtotal = mean(lawtotal), gun_rate = mean(gun_rate)) %>%
   summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2) %>%
   print()
-# r2 of 0.546 indicates moderate relationship between gun law total and firearm suicide rate
+# r2 of 0.617 indicates significant relationship between gun law total and firearm suicide rate
 
 # Plot total laws against firearm suicide rates
 sui_method_df %>%
   left_join(state_laws_total_df, by = join_key) %>%
   left_join(regions_df, by = "state") %>%
   filter(usps_st != "DC") %>%
-  ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
-  geom_point() +
+  group_by(region, usps_st) %>%
+  summarize(lawtotal = mean(lawtotal), gun_rate = mean(gun_rate)) %>%
+  ggplot(aes(x = lawtotal, y = gun_rate, color = region, label = usps_st)) +
+  geom_text() +
   geom_text(data = cor_law_fsr_all, aes(label = paste("r2 = ", round(r2, 3))), 
             x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, size = 5, color = "blue",
             inherit.aes = FALSE) +
   stat_smooth(method = "lm", se = FALSE, color = "blue") +
-  ylab("Annual CDC Firearm Suicide Rate") +
-  xlab("Number of Gun Laws by State") +
+  ylab("Average CDC Firearm Suicide Rate") +
+  xlab("Average Gun Laws by State") +
   labs(color = "Region") +
-  labs(title = "Annual Firearm Suicide Rate by Number of State Gun Laws", 
+  labs(title = "Firearm Suicide Rate by Number of State Gun Laws", 
        subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "right")
@@ -891,34 +904,38 @@ sui_method_df %>%
 
 # Calculate r2 by region
 cor_law_fsr_reg <- sui_method_df %>%
-  filter(state != "District of Columbia") %>%
   left_join(state_laws_total_df, by = join_key) %>%
   left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  group_by(region, state) %>%
+  summarize(lawtotal = mean(lawtotal), gun_rate = mean(gun_rate)) %>%
   group_by(region) %>%
   summarize(N = n(), r2 = cor(gun_rate, lawtotal)^2) %>%
   print()
-# r2 low of 0.371 in South, 0.571 in Midwest, 0.635 in West and 0.715 in Northeast
+# r2 low of 0.484 in South, 0.736 in West, 0.814 in Northeast and 0.841 in Midwest
 
 # Plot by region total laws against firearm suicide rates
 sui_method_df %>%
   filter(state != "District of Columbia") %>%
   left_join(state_laws_total_df, by = join_key) %>%
   left_join(regions_df, by = "state") %>%
-  ggplot(aes(x = lawtotal, y = gun_rate, color = region)) +
-  geom_point() +
+  group_by(region, usps_st) %>%
+  summarize(lawtotal = mean(lawtotal), gun_rate = mean(gun_rate)) %>%
+  ggplot(aes(x = lawtotal, y = gun_rate, color = region, label = usps_st)) +
+  geom_text() +
   facet_wrap(~ region) +
   geom_text(data = cor_law_fsr_reg, aes(label = paste("r2 = ", round(r2, 3))), 
-            x = 100, y = 17.5, hjust = 0.75, vjust = -0.25, size = 3.5, color = "blue",
+            x = 95, y = 13, hjust = 0.75, vjust = -0.25, size = 3.5, color = "blue",
             inherit.aes = FALSE) +
   stat_smooth(method = "lm", se = FALSE) +
-  ylab("Annual CDC Firearm Suicide Rate") +
-  xlab("Number of Gun Laws by State") +
+  ylab("Average CDC Firearm Suicide Rate") +
+  xlab("Average Gun Laws by State") +
   labs(color = "Region") +
   labs(title = "Annual Firearm Suicide Rate by Number of State Gun Laws by Region", 
        subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "right")
-# All regions exhibit negative relationship, more laws -> fewer firearm suicides
+# All regions exhibit strong negative relationship, more laws -> fewer firearm suicides
 
 # Create Firearm Suicide Rate change 1999-2016 to plot against law change
 fsr_chg_df <- sui_method_df %>%
@@ -1004,21 +1021,20 @@ sui_method_df %>%
   left_join(regions_df, by = "state") %>%
   left_join(law_chg_df, by = "state") %>%
   filter(law_quant == 1) %>%
-  ggplot(aes(x = lawtotal, y = gun_rate, color = -year)) +
+  ggplot(aes(x = year, y = gun_rate, color = lawtotal)) +
   geom_point() +
-  facet_wrap(~ state) +
-  geom_text(aes(label = paste("Law Change = ", law_chg)), 
-            x = 20, y = 17, hjust = 0.6, vjust = 1, size = 3.5, color = "blue",
-            inherit.aes = TRUE) +
   stat_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~ state) +
+  geom_text(aes(label = paste0("Law Change = ", law_chg)),
+            x = 2010, y = 17, hjust = 0.5, vjust = 1, size = 3.5, color = "blue", inherit.aes = FALSE) +
   scale_y_continuous(expand = c(0, 0), limits = c(0,18)) +
   ylab("Annual CDC Firearm Suicide Rate") +
-  xlab("Number of Gun Laws by State") +
-  labs(color = "Region") +
-  labs(title = "Firearm Suicide Rates for States that Reduced Gun Laws", 
+  xlab("Year") +
+  labs(color = "Total Laws") +
+  labs(title = "Firearm Suicide Rate Trend: States that Reduced Gun Laws", 
        subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
-  theme(legend.position = "right")
+  theme(legend.position = "bottom")
 # Every state that reduced gun laws experienced an increase in firearm suicides.
 # However, it should be noted that overall suicide rates rose from 10.5 to almost 14 per 100,000.
 
@@ -1029,23 +1045,21 @@ sui_method_df %>%
   left_join(regions_df, by = "state") %>%
   left_join(law_chg_df, by = "state") %>%
   filter(law_quant == 4) %>%
-  ggplot(aes(x = lawtotal, y = gun_rate, color = -year)) +
+  ggplot(aes(x = year, y = gun_rate, color = lawtotal)) +
   geom_point() +
-  facet_wrap(~ state) +
-  geom_text(aes(label = paste("Law Change = ", law_chg)), 
-            x = 75, y = 17, hjust = 0.5, vjust = 1, size = 3.5, color = "blue",
-            inherit.aes = TRUE) +
   stat_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~ state) +
+  geom_text(aes(label = paste0("Law Change = +", law_chg)),
+            x = 2010, y = 17, hjust = 0.5, vjust = 1, size = 3.5, color = "blue", inherit.aes = FALSE) +
   scale_y_continuous(expand = c(0, 0), limits = c(0,18)) +
   ylab("Annual CDC Firearm Suicide Rate") +
-  xlab("Number of Gun Laws by State") +
+  xlab("Year") +
   labs(color = "Region") +
-  labs(title = "Firearm Suicide Rates for States that Significantly Increased Gun Laws", 
+  labs(title = "Firearm Suicide Rate Trend: States that Significantly Increased Gun Laws", 
        subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
-  theme(legend.position = "right")
+  theme(legend.position = "bottom")
 # Two states, Colorado and Delaware, saw sharp suicide increases in spite of added gun laws.
 # A few more expeienced a more modest rise, while others were nearly flat or fell.
 # Again, this is all occurring as overal national suicide rates climbed from 10.5 to 14 per 100,000
-
 
