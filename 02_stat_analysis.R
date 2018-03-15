@@ -1054,7 +1054,7 @@ sui_method_df %>%
   scale_y_continuous(expand = c(0, 0), limits = c(0,18)) +
   ylab("Annual CDC Firearm Suicide Rate") +
   xlab("Year") +
-  labs(color = "Region") +
+  labs(color = "Total Laws") +
   labs(title = "Firearm Suicide Rate Trend: States that Significantly Increased Gun Laws", 
        subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
