@@ -829,7 +829,7 @@ state_laws_total_df %>%
             Median = median(lawtotal), IQR = IQR(lawtotal), SD = sd(lawtotal))
 ```
   
-##### The Northeast clearly has the strongest laws overall but also the widest spread. Figures for the West appear to be skewed higher by just a few states with an Avg of 23.3 but a median of only 11.
+##### The Northeast clearly has the strongest laws overall but also the widest spread. Figures for the West appear to be skewed higher by just a few states with an average of 23.3 but a median of only 11.
 
 #### Many-Mini Plot of Law Totals by State 1999-2016
 ```{r many_mini_lawtotals, message=FALSE, warning=FALSE}
@@ -885,7 +885,7 @@ fsr_law_avg_df <- law_chg_df %>%
   summarise(N = n(),  Avg_Law_Chg = mean(law_chg), Avg_FSR_Chg = mean(fsr_chg))
 ```
 
-```{r law_netchg_plot}
+```{r law_netchg_plot, message=FALSE, warning=FALSE}
 law_chg_df %>%
   left_join(regions_df, by = "state") %>%
   ggplot(aes(x = reorder(usps_st, law_chg), y = law_chg, fill = region)) +
@@ -1072,6 +1072,6 @@ sui_method_df %>%
 
 ```
   
-##### Two states, Colorado and Oregon, saw notable suicide increases in spite of added gun laws. Most others were nearly flat or fell. Again, this is all occurring as overall national suicide rates climbed from 10.5 to 14 per 100,000.
+##### Colorado and Oregon show moderately rising suicide trendlines in spite of added gun laws. Most other trendlines were nearly flat or declining. Again, this is all occurring as overall national suicide rates climbed from 10.5 to 14 per 100,000.
 
 
