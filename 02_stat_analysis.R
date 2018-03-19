@@ -1032,7 +1032,7 @@ sui_method_df %>%
   xlab("Year") +
   labs(color = "Total Laws") +
   labs(title = "Firearm Suicide Rate Trend: States that Reduced Gun Laws", 
-       subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
+       subtitle = "Rate: Deaths per 100,000 Population") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "bottom")
 # Every state that reduced gun laws experienced an increase in firearm suicides.
@@ -1056,7 +1056,7 @@ sui_method_df %>%
   xlab("Year") +
   labs(color = "Total Laws") +
   labs(title = "Firearm Suicide Rate Trend: States that Significantly Increased Gun Laws", 
-       subtitle = "Rate: Deaths per 100,000 Population, Number of Laws 1999-2016") +
+       subtitle = "Rate: Deaths per 100,000 Population") +
   labs(caption = "Sources: Boston University School of Public Health, Centers for Disease Control") +
   theme(legend.position = "bottom")
 # Two states, Colorado and Delaware, saw sharp suicide increases in spite of added gun laws.
