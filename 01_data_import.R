@@ -416,3 +416,27 @@ all_suicides_df <- all_suicides_df %>%
   rename(all_sui_rate = 'Crude Rate')
 
 summary(all_suicides_df)
+
+
+# Also adding state land area from Census Bureau for population density calculations
+
+# Data accessed at
+# https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk
+
+land_area <- read_xlsx("data_edited/state_land_area.xlsx")
+
+# Add population density to population table
+population_df <- population_df %>%
+  left_join(land_area, by = "state") %>%
+  mutate(pop_density = pop / land_area)
+
+hist(log(population_df$pop_density))
+
+population_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  group_by(region, usps_st) %>%
+  summarise(pop_density = mean(pop_density)) %>%
+  ggplot(aes(x = region, y = pop_density, label = usps_st, color = region)) +
+  geom_boxplot() +
+  geom_text()
