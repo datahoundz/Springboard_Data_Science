@@ -19,31 +19,74 @@ mach_data_df$reg_code <- factor(mach_data_df$reg_code)
 mach_data_df$subreg_code <- factor(mach_data_df$subreg_code)
 
 # Create variable for reg_west T/F per feedback from initial model
-# Deciding to stick with reg_code, though reg_west exhibits predictive value
+# Deciding to create separate variable for each to test
 mach_data_df <- mach_data_df %>%
-  mutate(reg_west = reg_code == 4) 
+  mutate(reg_west = reg_code == 4,
+         reg_neast = reg_code == 1,
+         reg_midw = reg_code == 2,
+         reg_south = reg_code == 3)
+
+# Factor in national suicide rate to adjust for rise since 2008
+nat_suicides <- sui_method_df %>%
+  group_by(year) %>%
+  summarise(nat_pop = sum(pop), nat_sui_all = sum(all_cnt), 
+            nat_rate = nat_sui_all/nat_pop * 100000)
+
+mach_data_df <- mach_data_df %>%
+  left_join(nat_suicides, by = "year") %>%
+  select(-nat_pop, -nat_sui_all)
+  
+
+View(mach_data_df)
 
 
-View(mach_data_df)  
+# Split into train & test data sets at 70/30 ratio
+gp <- runif(nrow(mach_data_df))
+train_df <- mach_data_df[gp < 0.70, ]
+test_df <- mach_data_df[gp >= 0.70, ]
+dim(train_df)
+dim(test_df)
 
 # Run correlation matrix on prospective variables
-mach_data_df[ , 8:28] %>%
+train_df[ , 8:ncol(train_df)] %>%
   cor()
 
-# Run single variable linear model
-mod1 <- lm(gun_rate ~ own_rate, mach_data_df)
+# Check single variable linear models
+mod1 <- lm(gun_rate ~ pop_density, train_df)
 summary(mod1)
 
 # Run multi-variate linear model
-mod2 <- lm(gun_rate ~ reg_code + own_rate + buy_reg, mach_data_df)
+mod2 <- lm(gun_rate ~ own_rate + buy_reg + reg_west + nat_rate, train_df)
 summary(mod2)
+# TRYING TO DECIDE BETWEEN USING reg_west VS reg_code???
 
 augment(mod2)
 confint(mod2)
 anova(mod2)
 
+
+
 # Residual & Q-Q Plot code from linear regression exercise
 par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
 plot(mod2, which = c(1, 2)) # "which" argument optional
 
-mach_data_df[c(896, 648, 467), ]
+# Checking outliers - WY-2012, WY-2002, AK-2008
+train_df[c(614, 606, 21), ]
+
+test_pred <- data_frame(predict(mod2, test_df))
+cor(test_pred, test_df$gun_rate)^2
+
+test_results <- augment(test2)
+head(test_results)
+test_results %>%
+  select(.cooksd) %>%
+  arrange(desc(.cooksd)) %>%
+  top_n(10)
+
+test_results %>%
+  filter(.cooksd > .03 | .hat > .05)
+
+test2 <- lm(mod2, test_df)
+anova(test2)
+summary(test2)
+
