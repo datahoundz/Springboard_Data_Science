@@ -42,10 +42,15 @@ View(mach_data_df)
 
 # Split into train & test data sets at 70/30 ratio
 gp <- runif(nrow(mach_data_df))
-train_df <- mach_data_df[gp < 0.70, ]
-test_df <- mach_data_df[gp >= 0.70, ]
+train_df <- mach_data_df[gp < 0.50, ]
+test_df <- mach_data_df[gp >= 0.50, ]
 dim(train_df)
 dim(test_df)
+
+# Play with 2013 as train and balance as test
+train_df <- mach_data_df %>% filter(year == 2013)
+test_df <- mach_data_df %>% filter(year != 2013)
+
 
 # Run correlation matrix on prospective variables
 train_df[ , 8:ncol(train_df)] %>%
@@ -58,35 +63,45 @@ summary(mod1)
 # Run multi-variate linear model
 mod2 <- lm(gun_rate ~ own_rate + buy_reg + reg_west + nat_rate, train_df)
 summary(mod2)
-# TRYING TO DECIDE BETWEEN USING reg_west VS reg_code???
 
-augment(mod2)
+summary(augment(mod2))
 confint(mod2)
 anova(mod2)
-
-
 
 # Residual & Q-Q Plot code from linear regression exercise
 par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
 plot(mod2, which = c(1, 2)) # "which" argument optional
 
-# Checking outliers - WY-2012, WY-2002, AK-2008
-train_df[c(614, 606, 21), ]
+# Checking outliers - MN-2013, WY-2013, AK-2013
+train_df[c(2, 50, 23), ]
+
+# Run model against test data and check correlation
+test2 <- lm(mod2, test_df)
+summary(test2)
+confint(test2)
+anova(test2)
 
 test_pred <- data_frame(predict(mod2, test_df))
 cor(test_pred, test_df$gun_rate)^2
 
+# Residual & Q-Q Plot
+plot(test2, which = c(1, 2))
+
+# Checking outliers - WY-2012, WY-2002, AK-2008
+test_df[c(847, 837, 27), ]
+
+
+# Review test results and check for high leverage and large residual
 test_results <- augment(test2)
 head(test_results)
+summary(test_results)
 test_results %>%
-  select(.cooksd) %>%
-  arrange(desc(.cooksd)) %>%
+  select(.hat) %>%
+  arrange(desc(.hat)) %>%
   top_n(10)
 
 test_results %>%
-  filter(.cooksd > .03 | .hat > .05)
+  filter(.cooksd > .03 | .hat > .05 | .se.fit > .3 | abs(.std.resid) > 3)
 
-test2 <- lm(mod2, test_df)
-anova(test2)
-summary(test2)
+
 
