@@ -373,17 +373,35 @@ write_csv(giff_agg_df, path = "data_cleaned/giff_agg_df.csv")
 # http://injuryprevention.bmj.com/content/22/3/216
 # http://www.gunsandammo.com/second-amendment/best-states-for-gun-owners-2017/
 # http://www.gunsandammo.com/network-topics/culture-politics-network/best-states-for-gun-owners-2015/
+# Proxy gun ownership data provided via email by Dr. Michael Siegel at Boston University School of Public Health
+# Original source file is available in data_original folder.
 
 gun_own_2013_df <- read_excel("data_edited/gun_ownership_rates_2013.xlsx")
 gun_ammo_df <- read.csv("data_edited/guns_ammo_rankings.csv")
+gun_own_prx_df <- read_excel("data_edited/gun_ownership_proxy.xlsx")
 
 head(gun_own_2013_df)
 summary(gun_own_2013_df)
+
+# No data cleaning required
 
 head(gun_ammo_df)
 summary(gun_ammo_df)
 
 # No data cleaning required
+
+head(gun_own_prx_df)
+summary(gun_own_prx_df)
+
+# Gun Ownership Proxy: Retain only proxy variable for 1999-2106,
+# convert proxy to percentage and year to integer
+gun_own_prx_df <- gun_own_prx_df %>%
+  filter(year >= 1999) %>%
+  mutate(own_proxy = proxy/100, year = as.integer(year)) %>%
+  select(state, year, own_proxy)
+
+# Export to data_cleaned per Section 3 Data Wrangling Ex. 7
+write_csv(gun_own_prx_df, path = "data_cleaned/gun_own_prx_df.csv")
 
 
 # =======================================================================
