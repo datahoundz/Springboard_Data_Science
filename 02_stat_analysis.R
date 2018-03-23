@@ -244,6 +244,34 @@ sui_method_df %>%
   labs(caption = "Centers for Disease Control Data for 1999-2016") +
   theme(legend.position = "right")
 
+
+# Check for population effect as function of Population Density instead.
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  left_join(population_df, by = c("state", "year", "pop")) %>%
+  group_by(subregion, usps_st) %>%
+  filter(usps_st != "DC") %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000,
+            avg_suicides = mean(all_cnt),
+            avg_pop = mean(pop),
+            pop_dens = mean(pop_density)) %>%
+  ggplot(aes(x = log(pop_dens), y = all_rate, label = usps_st, color = subregion)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Subregion") +
+  ylab("CDC Overall Suicide Rate") +
+  xlab("Population Density - Log Scale") +
+  labs(title = "Overall Suicide Rates by Population Density", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right")
+
+# Correlation equation for Population Density and Overall Suicide Rate
+cor(sui_method_df$all_rate, log(population_df$pop_density))^2
+
+
 # Plot firearm vs other using line plot over time
 sui_method_df %>%
   left_join(regions_df, by = "state") %>%
