@@ -824,6 +824,25 @@ state_laws_total_df %>%
   theme(legend.position = "bottom")
 # Definite regional differences and some regions decreasing gun laws
 
+
+# Add regional layer to above plot CALCULATING MEDIAN INSTEAD
+state_laws_total_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region, year) %>%
+  select(region, year, lawtotal) %>%
+  summarise(tot_laws = median(lawtotal)) %>%
+  ggplot(aes(x = year, y = tot_laws, color = region)) +
+  geom_line(size = 1) +
+  expand_limits(y = 0) +
+  labs(color = "Year") +
+  ylab("Median State Gun Law Count") +
+  xlab("Year") +
+  labs(title = "Median State Gun Law Counts by Region, 1999-2016", 
+       subtitle = "") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom")
+# Median state law counts displays absence of broader national change
+
 # Calculate region level statistics
 state_laws_total_df %>%
   left_join(regions_df, by = "state") %>%
