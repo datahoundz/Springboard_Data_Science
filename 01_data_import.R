@@ -436,7 +436,11 @@ all_suicides_df <- all_suicides_df %>%
 summary(all_suicides_df)
 
 
-# Also adding state land area from Census Bureau for population density calculations
+# =======================================================================
+# 
+# Add State Land Area from Census Bureau for Population Density Calculations
+# 
+# =======================================================================
 
 # Data accessed at
 # https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk
