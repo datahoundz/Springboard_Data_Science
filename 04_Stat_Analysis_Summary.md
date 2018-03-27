@@ -1,7 +1,7 @@
-Statistical Analysis Summary
+Statistical Analysis
 ================
 Jim Scotland
-March 11, 2018
+Revised March 26, 2018
 
 ### CDC Firearm Homicide & Suicide Data
 
@@ -41,7 +41,7 @@ gun_deaths_df %>%
     ## # A tibble: 1 x 7
     ##       N   Min   Max   Avg Median   IQR    SD
     ##   <int> <dbl> <dbl> <dbl>  <dbl> <dbl> <dbl>
-    ## 1   918 0.600  30.7  3.74   3.30  3.00  3.11
+    ## 1   918 0.600  30.7  3.74   3.30    3.  3.11
 
 ##### Max of 30.7 stems from exceedingly high DC rates noted on import, will filter out DC for plots to avoid skewing of y-axis.
 
@@ -218,7 +218,7 @@ sui_method_df %>%
   labs(fill = "Subregion") +
   ylab("CDC Overall Suicide Rate") +
   xlab("State") +
-  labs(title = "Overall Suicide Rates by State Grouped by Population Quantile", 
+  labs(title = "Overall Suicide Rates by State Grouped by Population Quartile", 
        subtitle = "Rate: Deaths per 100,000 Population") +
   labs(caption = "Centers for Disease Control Data for 1999-2016") +
   theme(legend.position = "right")
@@ -227,6 +227,44 @@ sui_method_df %>%
 ![](04_Stat_Analysis_Summary_files/figure-markdown_github/sui_all_state_box_popq-1.png)
 
 ##### Plot dispels issues of small population Mountain states driving higher suicide rates. Mountain states post highest overall suicide rates across all four population quartiles.
+
+#### Plot Population Effect as Function of Population DENSITY Instead
+
+``` r
+# Check for population effect as function of Population Density instead.
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  left_join(population_df, by = c("state", "year", "pop")) %>%
+  group_by(subregion, usps_st) %>%
+  filter(usps_st != "DC") %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000,
+            avg_suicides = mean(all_cnt),
+            avg_pop = mean(pop),
+            pop_dens = mean(pop_density)) %>%
+  ggplot(aes(x = log(pop_dens), y = all_rate, label = usps_st, color = subregion)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Subregion") +
+  ylab("CDC Overall Suicide Rate") +
+  xlab("Population Density - Log Scale") +
+  labs(title = "Overall Suicide Rates by Population Density", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right")
+```
+
+![](04_Stat_Analysis_Summary_files/figure-markdown_github/pop_density_plot-1.png)
+
+``` r
+# Correlation equation for Population Density and Overall Suicide Rate
+cor(sui_method_df$all_rate, log(population_df$pop_density))^2
+```
+
+    ## [1] 0.577
+
+##### Plot supports connection between lower population density and higher suicide rates; however, a clear disconnect between the Mountain and Great Plains states emerges.
 
 #### Lineplot of Suicide Rates by Method Across Subregions
 
@@ -287,8 +325,8 @@ sui_method_df %>%
     ## # A tibble: 2 x 4
     ##   abv_avg_rate     n deaths avg_gun_pct
     ##   <lgl>        <int>  <int>       <dbl>
-    ## 1 F              503 424349       0.479
-    ## 2 T              415 224424       0.582
+    ## 1 FALSE          503 424349       0.479
+    ## 2 TRUE           415 224424       0.582
 
 ##### Since 1999, guns accounted for an average 58% of suicides in states with above average suicide rates and 48% of suicides in states with below average rates (average rates calculated annually).
 
@@ -461,18 +499,18 @@ giff_grd_df %>%
     ## # Groups:   region [?]
     ##    region       year     N   Min   Max AvgScore Median   IQR    SD
     ##    <chr>       <int> <int> <dbl> <dbl>    <dbl>  <dbl> <dbl> <dbl>
-    ##  1 1-Northeast  2014     9     0  3.67    2.30    3.33 3.00   1.65
-    ##  2 1-Northeast  2015     9     0  3.67    2.33    3.33 2.67   1.62
-    ##  3 1-Northeast  2016     9     0  3.67    2.33    3.33 2.67   1.62
-    ##  4 2-Midwest    2014    12     0  3.33    1.11    1.00 1.75   1.06
-    ##  5 2-Midwest    2015    12     0  3.33    1.06    1.00 1.75   1.04
-    ##  6 2-Midwest    2016    12     0  3.33    1.17    1.00 2.00   1.10
-    ##  7 3-South      2014    16     0  3.67    0.459   0    0      1.10
-    ##  8 3-South      2015    16     0  3.67    0.521   0    0.168  1.14
-    ##  9 3-South      2016    16     0  3.67    0.521   0    0.168  1.14
-    ## 10 4-West       2014    13     0  3.67    0.975   0    1.67   1.41
-    ## 11 4-West       2015    13     0  3.67    1.03    0    2.00   1.44
-    ## 12 4-West       2016    13     0  4.00    1.26    0    2.00   1.55
+    ##  1 1-Northeast  2014     9    0.  3.67    2.30    3.33 3.00   1.65
+    ##  2 1-Northeast  2015     9    0.  3.67    2.33    3.33 2.67   1.62
+    ##  3 1-Northeast  2016     9    0.  3.67    2.33    3.33 2.67   1.62
+    ##  4 2-Midwest    2014    12    0.  3.33    1.11    1.00 1.75   1.06
+    ##  5 2-Midwest    2015    12    0.  3.33    1.06    1.00 1.75   1.04
+    ##  6 2-Midwest    2016    12    0.  3.33    1.17    1.00 2.00   1.10
+    ##  7 3-South      2014    16    0.  3.67    0.459   0.   0.     1.10
+    ##  8 3-South      2015    16    0.  3.67    0.521   0.   0.168  1.14
+    ##  9 3-South      2016    16    0.  3.67    0.521   0.   0.168  1.14
+    ## 10 4-West       2014    13    0.  3.67    0.975   0.   1.67   1.41
+    ## 11 4-West       2015    13    0.  3.67    1.03    0.   2.00   1.44
+    ## 12 4-West       2016    13    0.  4.00    1.26    0.   2.00   1.55
 
 #### Mofified Histogram of Giffords Law Grades
 
@@ -637,12 +675,35 @@ state_laws_total_df %>%
     ## # A tibble: 4 x 8
     ##   region          N   Min   Max   Avg Median   IQR    SD
     ##   <chr>       <int> <dbl> <dbl> <dbl>  <dbl> <dbl> <dbl>
-    ## 1 1-Northeast   162  3.00 100    44.7   45.0  56.0  31.3
-    ## 2 2-Midwest     216  5.00  66.0  20.9   19.0  13.0  14.5
-    ## 3 3-South       288  5.00  64.0  17.7   13.0  11.0  12.0
-    ## 4 4-West        234  4.00 104    23.3   11.0  17.0  26.7
+    ## 1 1-Northeast   162    3.  100.  44.7    45.   56.  31.3
+    ## 2 2-Midwest     216    5.   66.  20.9    19.   13.  14.5
+    ## 3 3-South       288    5.   64.  17.7    13.   11.  12.0
+    ## 4 4-West        234    4.  104.  23.3    11.   17.  26.7
 
-##### The Northeast clearly has the strongest laws overall but also the widest spread. Figures for the West appear to be skewed higher by just a few states with an Avg of 23.3 but a median of only 11.
+##### The Northeast clearly has the strongest laws overall but also the widest spread. Figures for the West appear to be skewed higher by just a few states with an average of 23.3 but a median of only 11.
+
+#### Revisiting Regional Law Count Trend Using Median State Law Counts
+
+``` r
+# Add regional layer to above plot CALCULATING MEDIAN INSTEAD
+state_laws_total_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region, year) %>%
+  select(region, year, lawtotal) %>%
+  summarise(tot_laws = median(lawtotal)) %>%
+  ggplot(aes(x = year, y = tot_laws, color = region)) +
+  geom_line(size = 1) +
+  expand_limits(y = 0) +
+  labs(color = "Year") +
+  ylab("Median State Gun Law Count") +
+  xlab("Year") +
+  labs(title = "Median State Gun Law Counts by Region, 1999-2016", 
+       subtitle = "") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom")
+```
+
+![](04_Stat_Analysis_Summary_files/figure-markdown_github/median_law_count_plot-1.png) \#\#\#\#\# Median state law counts display absence of broader national change with a few states driving the overall change.
 
 #### Many-Mini Plot of Law Totals by State 1999-2016
 
@@ -690,9 +751,6 @@ law_chg_df %>%
   theme(legend.position = "bottom") +
   labs(color = "Region")
 ```
-
-    ## Warning: Column `state` joining factor and character vector, coercing into
-    ## character vector
 
 ![](04_Stat_Analysis_Summary_files/figure-markdown_github/law_netchg_plot-1.png)
 
@@ -790,7 +848,7 @@ sui_method_df %>%
 
 ![](04_Stat_Analysis_Summary_files/figure-markdown_github/fsr_vs_lawtotal_reg-1.png)
 
-##### All regions exhibit negative relationship, more laws -&gt; lower firearm suicide rates.
+##### All regions exhibit negative relationship, more laws correlate with lower firearm suicide rates.
 
 #### Firearm Suicide Rate Grouped by Law Change Quartile
 
@@ -898,4 +956,4 @@ sui_method_df %>%
 
 ![](04_Stat_Analysis_Summary_files/figure-markdown_github/increased_state_plots-1.png)
 
-##### Two states, Colorado and Oregon, saw notable suicide increases in spite of added gun laws. Most others were nearly flat or fell. Again, this is all occurring as overall national suicide rates climbed from 10.5 to 14 per 100,000.
+##### Colorado and Oregon show moderately rising suicide trendlines in spite of added gun laws. Most other trendlines were nearly flat or declining. Again, this is all occurring as overall national suicide rates climbed from 10.5 to 14 per 100,000.

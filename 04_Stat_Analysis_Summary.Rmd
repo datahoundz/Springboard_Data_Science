@@ -1,7 +1,7 @@
 ---
-title: "Statistical Analysis Summary"
+title: "Statistical Analysis"
 author: "Jim Scotland"
-date: "March 11, 2018"
+date: "Revised March 26, 2018"
 output: 
   github_document: 
     fig_height: 8
@@ -96,6 +96,23 @@ population_df <- population_df %>%
 # Filter for Years applicable to available CDC data
 population_df <- population_df %>%
   filter(year >= 1999)
+
+# =======================================================================
+# 
+# Add State Land Area from Census Bureau for Population Density Calculations
+# 
+# =======================================================================
+
+# Data accessed at
+# https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk
+
+land_area <- read_xlsx("data_edited/state_land_area.xlsx")
+
+# Add population density to population table
+population_df <- population_df %>%
+  left_join(land_area, by = "state") %>%
+  mutate(pop_density = pop / land_area)
+
 
 # =======================================================================
 # 
@@ -268,6 +285,17 @@ all_suicides_df <- all_suicides_df %>%
 gun_own_2013_df <- read_excel("data_edited/gun_ownership_rates_2013.xlsx")
 
 
+gun_own_prx_df <- read_excel("data_edited/gun_ownership_proxy.xlsx")
+
+
+# Gun Ownership Proxy: Retain only proxy variable for 1999-2106,
+# convert proxy to percentage and year to integer
+gun_own_prx_df <- gun_own_prx_df %>%
+  filter(year >= 1999) %>%
+  mutate(own_proxy = proxy/100, year = as.integer(year)) %>%
+  select(state, year, own_proxy)
+
+
 # That's all for the data importing.
 
 ```
@@ -435,14 +463,44 @@ sui_method_df %>%
   labs(fill = "Subregion") +
   ylab("CDC Overall Suicide Rate") +
   xlab("State") +
-  labs(title = "Overall Suicide Rates by State Grouped by Population Quantile", 
+  labs(title = "Overall Suicide Rates by State Grouped by Population Quartile", 
        subtitle = "Rate: Deaths per 100,000 Population") +
   labs(caption = "Centers for Disease Control Data for 1999-2016") +
   theme(legend.position = "right")
 ```
   
 ##### Plot dispels issues of small population Mountain states driving higher suicide rates. Mountain states post highest overall suicide rates across all four population quartiles.  
+  
+#### Plot Population Effect as Function of Population DENSITY Instead
+```{r pop_density_plot, message=FALSE, warning=FALSE}
+# Check for population effect as function of Population Density instead.
+sui_method_df %>%
+  left_join(regions_df, by = "state") %>%
+  left_join(population_df, by = c("state", "year", "pop")) %>%
+  group_by(subregion, usps_st) %>%
+  filter(usps_st != "DC") %>%
+  summarise(all_rate = sum(all_cnt)/sum(pop) * 100000,
+            gun_rate = sum(gun_cnt)/sum(pop) * 100000,
+            other_rate = sum(other_cnt)/sum(pop) * 100000,
+            avg_suicides = mean(all_cnt),
+            avg_pop = mean(pop),
+            pop_dens = mean(pop_density)) %>%
+  ggplot(aes(x = log(pop_dens), y = all_rate, label = usps_st, color = subregion)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(color = "Subregion") +
+  ylab("CDC Overall Suicide Rate") +
+  xlab("Population Density - Log Scale") +
+  labs(title = "Overall Suicide Rates by Population Density", 
+       subtitle = "Rate: Deaths per 100,000 Population") +
+  labs(caption = "Centers for Disease Control Data for 1999-2016") +
+  theme(legend.position = "right")
 
+# Correlation equation for Population Density and Overall Suicide Rate
+cor(sui_method_df$all_rate, log(population_df$pop_density))^2
+```
+##### Plot supports connection between lower population density and higher suicide rates; however, a clear disconnect between the Mountain and Great Plains states emerges.  
+  
 #### Lineplot of Suicide Rates by Method Across Subregions
 ```{r subreg_sui_method}
 sui_method_df %>%
@@ -829,7 +887,29 @@ state_laws_total_df %>%
             Median = median(lawtotal), IQR = IQR(lawtotal), SD = sd(lawtotal))
 ```
   
-##### The Northeast clearly has the strongest laws overall but also the widest spread. Figures for the West appear to be skewed higher by just a few states with an average of 23.3 but a median of only 11.
+##### The Northeast clearly has the strongest laws overall but also the widest spread. Figures for the West appear to be skewed higher by just a few states with an average of 23.3 but a median of only 11.  
+  
+#### Revisiting Regional Law Count Trend Using Median State Law Counts  
+```{r median_law_count_plot, message=FALSE, warning=FALSE}
+# Add regional layer to above plot CALCULATING MEDIAN INSTEAD
+state_laws_total_df %>%
+  left_join(regions_df, by = "state") %>%
+  group_by(region, year) %>%
+  select(region, year, lawtotal) %>%
+  summarise(tot_laws = median(lawtotal)) %>%
+  ggplot(aes(x = year, y = tot_laws, color = region)) +
+  geom_line(size = 1) +
+  expand_limits(y = 0) +
+  labs(color = "Year") +
+  ylab("Median State Gun Law Count") +
+  xlab("Year") +
+  labs(title = "Median State Gun Law Counts by Region, 1999-2016", 
+       subtitle = "") +
+  labs(caption = "Boston University School of Public Health: State Gun Law Database") +
+  theme(legend.position = "bottom")
+```
+##### Median state law counts display absence of broader national change with a few states driving the overall change.  
+  
 
 #### Many-Mini Plot of Law Totals by State 1999-2016
 ```{r many_mini_lawtotals, message=FALSE, warning=FALSE}
@@ -976,7 +1056,7 @@ sui_method_df %>%
 
 ```
   
-##### All regions exhibit negative relationship, more laws -> lower firearm suicide rates.  
+##### All regions exhibit negative relationship, more laws correlate with lower firearm suicide rates.  
   
 #### Firearm Suicide Rate Grouped by Law Change Quartile  
 ```{r fsrchg_lawchg_qrt, message=FALSE, warning=FALSE}
