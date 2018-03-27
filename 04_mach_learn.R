@@ -194,11 +194,11 @@ test_results %>%
 # ==================================================================================
 
 # Check basic relationship to Siegel rate
-mod5 <- lm(gun_rate ~ own_proxy, train_df)
+mod5 <- lm(all_rate ~ buy_reg, train_df)
 summary(mod5)
 
 # Design, test and run multi-variate linear model
-mod6 <- lm(gun_rate ~ own_proxy + reg_west + buy_reg + nat_rate, train_df)
+mod6 <- lm(gun_rate ~ own_proxy + buy_reg + reg_west, train_df)
 
 # Check results
 summary(mod6)
@@ -216,7 +216,7 @@ train_df[c(2, 47, 41), ]
 
 # ==================================================================================
 # 
-# Apply complete SIEGEL proxy ownership to test data and evaluate results
+# Apply COMPLETE SIEGEL proxy ownership to test data and evaluate results
 # 
 # ==================================================================================
 
@@ -232,22 +232,22 @@ cor(test_pred_prox, test_df$gun_rate)^2
 # Residual & Q-Q Plot
 plot(test6, which = c(1, 2))
 
-# Checking outliers - WY-2012, AK-2004, AK-2008
-test_df[c(847, 23, 27), ]
+# Checking outliers - WY-2012, OK-2016, AK-2008
+test_df[c(847, 612, 27), ]
 
 # Review test results and check for high leverage and large residual
 test_results <- augment(test6)
 head(test_results)
 summary(test_results)
 test_results %>%
-  select(.se.fit) %>%
-  arrange(desc(.se.fit)) %>%
+  select(.cooksd) %>%
+  arrange(desc(.cooksd)) %>%
   top_n(10)
 
 outliers <- test_results %>%
   filter(.cooksd > .02 | abs(.std.resid) > 3)
 
 outliers %>%
-  inner_join(test_df, by = c("gun_rate", "own_proxy", "reg_west", "buy_reg", "nat_rate")) %>%
+  inner_join(test_df, by = c("gun_rate", "own_proxy", "reg_west", "buy_reg")) %>%
   select(state, year, all_rate, .fitted, .hat, .cooksd, .se.fit, .std.resid) %>%
   arrange(.cooksd)
