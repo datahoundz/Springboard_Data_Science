@@ -15,6 +15,7 @@ mach_data_df <- sui_method_df %>%
   left_join(state_laws_total_df, by = join_key) %>%
   left_join(laws_cat_df, by = join_key) %>%
   left_join(gun_own_2013_df, by = "state") %>%
+  left_join(gun_own_prx_df, by = join_key) %>%
   filter(year >= 1999)
 
 # Convert region/subregion to factor for linear regression
@@ -185,3 +186,68 @@ test_results %>%
 
 test_results %>%
   filter(.cooksd > .03 | .hat > .05 | .se.fit > .3 | abs(.std.resid) > 3)
+
+# ==================================================================================
+# 
+# Check model using alternative COMPLETE SIEGEL proxy ownership rates
+# 
+# ==================================================================================
+
+# Check basic relationship to Siegel rate
+mod5 <- lm(gun_rate ~ own_proxy, train_df)
+summary(mod5)
+
+# Design, test and run multi-variate linear model
+mod6 <- lm(gun_rate ~ own_proxy + reg_west + buy_reg + nat_rate, train_df)
+
+# Check results
+summary(mod6)
+summary(augment(mod6))
+confint(mod6)
+anova(mod6)
+
+# Residual & Q-Q Plot code from linear regression exercise
+par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
+plot(mod6, which = c(1, 2)) # "which" argument optional
+
+# Checking outliers - AK-2013, WA-2013, SD-2013
+train_df[c(2, 47, 41), ]
+
+
+# ==================================================================================
+# 
+# Apply complete SIEGEL proxy ownership to test data and evaluate results
+# 
+# ==================================================================================
+
+# Run SIEGEL model against test data and check correlation
+test6 <- lm(mod6, test_df)
+summary(test6)
+confint(test6)
+anova(test6)
+
+test_pred_prox <- data_frame(predict(mod6, test_df))
+cor(test_pred_prox, test_df$gun_rate)^2
+
+# Residual & Q-Q Plot
+plot(test6, which = c(1, 2))
+
+# Checking outliers - WY-2012, AK-2004, AK-2008
+test_df[c(847, 23, 27), ]
+
+# Review test results and check for high leverage and large residual
+test_results <- augment(test6)
+head(test_results)
+summary(test_results)
+test_results %>%
+  select(.se.fit) %>%
+  arrange(desc(.se.fit)) %>%
+  top_n(10)
+
+outliers <- test_results %>%
+  filter(.cooksd > .02 | abs(.std.resid) > 3)
+
+outliers %>%
+  inner_join(test_df, by = c("gun_rate", "own_proxy", "reg_west", "buy_reg", "nat_rate")) %>%
+  select(state, year, all_rate, .fitted, .hat, .cooksd, .se.fit, .std.resid) %>%
+  arrange(.cooksd)
