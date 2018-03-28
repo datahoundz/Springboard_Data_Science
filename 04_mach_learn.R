@@ -226,8 +226,8 @@ summary(test6)
 confint(test6)
 anova(test6)
 
-test_pred_prox <- data_frame(predict(mod6, test_df))
-cor(test_pred_prox, test_df$gun_rate)^2
+test_df$predict <- predict(mod6, test_df)
+cor(test_df$predict, test_df$gun_rate)^2
 
 # Residual & Q-Q Plot
 plot(test6, which = c(1, 2))
@@ -251,3 +251,6 @@ outliers %>%
   inner_join(test_df, by = c("gun_rate", "own_proxy", "reg_west", "buy_reg")) %>%
   select(state, year, all_rate, .fitted, .hat, .cooksd, .se.fit, .std.resid) %>%
   arrange(.cooksd)
+
+# Plot Gain Curve for Model
+GainCurvePlot(test_df, "predict", "gun_rate", "Proxy Ownership Model Results")
