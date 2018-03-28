@@ -12,6 +12,7 @@ library(scales)
 library(ggmap)
 library(maps)
 library(mapdata)
+library(WVPlots)
 
 # Set options to limit sci notation and decimal places
 options(scipen = 999, digits = 3)
