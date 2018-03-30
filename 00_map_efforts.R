@@ -29,6 +29,9 @@ us_map <- us_map %>%
 map_data <- gun_deaths_df %>%
   left_join(regions_df, by = "state") %>%
   inner_join(giff_grd_df, by = join_key) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(gun_own_prx_df, by = join_key) %>%
+  left_join(giff_letter_mp, by = "state") %>%
   filter(year == 2016)
 
 summary(map_data)
@@ -50,7 +53,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data,            ## set data source
                     map = us_map,
-                    aes(fill = law_score,       #### set map variable 
+                    aes(fill = grade,       #### set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -66,18 +69,20 @@ gg <- gg + geom_map(
 library(RColorBrewer)
 myBlues = brewer.pal(n = 9, "Blues")[3:9]
 pal = colorRampPalette(myBlues)
+grade_colors <- c("A" = "#08306B", "B" = "#08519C", "C" = "#4292C6", "D" = "#9ECAE1", "F" = "#C6DBEF")
+
 
 gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
 
 gg <- gg + coord_map() +
   theme_bw() +
-  # scale_fill_brewer(palette = "Blues") +
-  scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  scale_fill_manual(values = grade_colors, direction = -1) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
   xlab("") +
   ylab("") +
-  labs(fill = "Law Score") +
+  labs(fill = "Law Grade") +
   labs(title = "Giffords Law Center: State Gun Law Grades", 
-       subtitle = "Score: 0 = F, 4 = A") +
+       subtitle = "Grades for 2016") +
   labs(caption = "Source: Giffords Law Center") 
 
 gg <- gg + theme(panel.border=element_blank())
