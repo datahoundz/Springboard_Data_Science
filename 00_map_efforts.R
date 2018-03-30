@@ -51,7 +51,9 @@ map_data_df <- regions_df %>%
   inner_join(homicides_df, by = join_key) %>%
   mutate(hom_qnt = ntile(hom_rate, qnt)) %>%
   inner_join(law_chg_df, by = "state") %>%
-  inner_join(fsr_chg_df, by = "state")
+  mutate(law_qnt = ntile(law_chg, qnt)) %>%
+  inner_join(fsr_chg_df, by = "state") %>%
+  mutate(fsr_qnt = ntile(fsr_chg, qnt))
 
 # ===================================================================
 # 
@@ -370,7 +372,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(law_quant),       #### set map variable 
+                    aes(fill = as.factor(law_qnt),       #### set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -387,12 +389,12 @@ gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=
 
 gg <- gg + coord_map() +
   theme_bw() +
-  scale_fill_manual(values = qnt4_colors, labels = map_law_labels) +
+  scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
   # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
   xlab("") +
   ylab("") +
   labs(fill = "Gun Law Change") +
-  labs(title = "Changes in State Gun Laws", 
+  labs(title = "Changes in Number of Gun Laws", 
        subtitle = "Net Change from 1999-2016") +
   labs(caption = "Boston University School of Public Health") 
 
@@ -426,7 +428,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(fsr_quant),       #### set map variable 
+                    aes(fill = as.factor(fsr_qnt),       #### set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -443,12 +445,12 @@ gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=
 
 gg <- gg + coord_map() +
   theme_bw() +
-  scale_fill_manual(values = qnt4_colors, labels = map_law_labels) +
+  scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
   # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
   xlab("") +
   ylab("") +
   labs(fill = "Firearm Suicide Change") +
-  labs(title = "Changes in State Firearm Suicide Rates", 
+  labs(title = "Changes in Firearm Suicide Rates", 
        subtitle = "Net Change from 1999-2016") +
   labs(caption = "Centers for Disease Control") 
 
