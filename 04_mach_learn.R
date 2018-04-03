@@ -55,9 +55,9 @@ test_df <- mach_data_df[gp >= 0.50, ]
 dim(train_df)
 dim(test_df)
 
-# Play with 2013 as train and balance as test
-train_df <- mach_data_df %>% filter(year == 2013)
-test_df <- mach_data_df %>% filter(year != 2013)
+# # Play with 2013 as train and balance as test
+# train_df <- mach_data_df %>% filter(year == 2013)
+# test_df <- mach_data_df %>% filter(year != 2013)
 
 # ==================================================================================
 # 
@@ -80,7 +80,7 @@ summary(mod1)
 # ==================================================================================
 
 # Design, test and run multi-variate linear model
-mod2 <- lm(gun_rate ~ own_rate + buy_reg + reg_west + nat_rate, train_df)
+mod2 <- lm(gun_rate ~ own_proxy + buy_reg + reg_west, train_df)
 
 # Check results
 summary(mod2)
@@ -88,12 +88,18 @@ summary(augment(mod2))
 confint(mod2)
 anova(mod2)
 
+# Most effective variables are own_proxy, buy_reg and reg_west
+# pop_density effect plummeted when combined with other variables
+# lawtotal similar in effect to buy_reg but inlcudes laws unrelated to dependent variable
+# siegel_rate (avg own_proxy for 1981-2013) oddly more accurate than annual own_proxy,
+# but annual own_proxy is a more statistically relevant value to utilize
+
 # Residual & Q-Q Plot code from linear regression exercise
 par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
 plot(mod2, which = c(1, 2)) # "which" argument optional
 
-# Checking outliers - MN-2013, WY-2013, AK-2013
-train_df[c(2, 50, 23), ]
+# Checking outliers - WV-2016, WY-2012, SD-2007
+train_df[c(435, 449, 372), ]
 
 # ==================================================================================
 # 
@@ -101,156 +107,22 @@ train_df[c(2, 50, 23), ]
 # 
 # ==================================================================================
 
-# Run model against test data and check correlation
+# Run model against test data and check results
 test2 <- lm(mod2, test_df)
 summary(test2)
 confint(test2)
 anova(test2)
 
-test_pred <- data_frame(predict(mod2, test_df))
-cor(test_pred, test_df$gun_rate)^2
+# Load predicted values into test_df, check r2 and RMSE
+test_df$predict <- predict(mod2, test_df)
+(cor(test_df$predict, test_df$gun_rate)^2)
+(test2_rmse <- sqrt(mean((test_df$predict - test_df$gun_rate)^2)))
 
 # Residual & Q-Q Plot
 plot(test2, which = c(1, 2))
 
-# Checking outliers - WY-2012, WY-2002, AK-2008
-test_df[c(847, 837, 27), ]
-
-# Review test results and check for high leverage and large residual
-test_results <- augment(test2)
-head(test_results)
-summary(test_results)
-test_results %>%
-  select(.hat) %>%
-  arrange(desc(.hat)) %>%
-  top_n(10)
-
-test_results %>%
-  filter(.cooksd > .03 | .hat > .05 | .se.fit > .3 | abs(.std.resid) > 3)
-
-# ==================================================================================
-# 
-# Check model using alternative SIEGEL ownership rates
-# 
-# ==================================================================================
-
-# Check basic relationship to Siegel rate
-mod3 <- lm(gun_rate ~ siegel_rate, train_df)
-summary(mod3)
-
-# Design, test and run multi-variate linear model
-mod4 <- lm(gun_rate ~ siegel_rate + buy_reg + reg_west + nat_rate, train_df)
-
-# Check results
-summary(mod4)
-summary(augment(mod4))
-confint(mod4)
-anova(mod4)
-
-# Residual & Q-Q Plot code from linear regression exercise
-par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
-plot(mod4, which = c(1, 2)) # "which" argument optional
-
-# Checking outliers - OK-2013, SD-2013, AK-2013
-train_df[c(2, 36, 41), ]
-
-# ==================================================================================
-# 
-# Apply SIEGEL model to test data and evaluate results
-# 
-# ==================================================================================
-
-# Run SIEGEL model against test data and check correlation
-test4 <- lm(mod4, test_df)
-summary(test4)
-confint(test4)
-anova(test4)
-
-test_pred_sieg <- data_frame(predict(mod4, test_df))
-cor(test_pred_sieg, test_df$gun_rate)^2
-
-# Residual & Q-Q Plot
-plot(test2, which = c(1, 2))
-
-# Checking outliers - WY-2012, WY-2002, AK-2008
-test_df[c(847, 837, 27), ]
-
-# Review test results and check for high leverage and large residual
-test_results <- augment(test2)
-head(test_results)
-summary(test_results)
-test_results %>%
-  select(.hat) %>%
-  arrange(desc(.hat)) %>%
-  top_n(10)
-
-test_results %>%
-  filter(.cooksd > .03 | .hat > .05 | .se.fit > .3 | abs(.std.resid) > 3)
-
-# ==================================================================================
-# 
-# Check model using alternative COMPLETE SIEGEL proxy ownership rates
-# 
-# ==================================================================================
-
-# Check basic relationship to Siegel rate
-mod5 <- lm(all_rate ~ buy_reg, train_df)
-summary(mod5)
-
-# Design, test and run multi-variate linear model
-mod6 <- lm(gun_rate ~ own_proxy + buy_reg + reg_west, train_df)
-
-# Check results
-summary(mod6)
-summary(augment(mod6))
-confint(mod6)
-anova(mod6)
-
-# Residual & Q-Q Plot code from linear regression exercise
-par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
-plot(mod6, which = c(1, 2)) # "which" argument optional
-
-# Checking outliers - AK-2013, WA-2013, SD-2013
-train_df[c(2, 47, 41), ]
-
-
-# ==================================================================================
-# 
-# Apply COMPLETE SIEGEL proxy ownership to test data and evaluate results
-# 
-# ==================================================================================
-
-# Run SIEGEL model against test data and check correlation
-test6 <- lm(mod6, test_df)
-summary(test6)
-confint(test6)
-anova(test6)
-
-test_df$predict <- predict(mod6, test_df)
-cor(test_df$predict, test_df$gun_rate)^2
-
-# Residual & Q-Q Plot
-plot(test6, which = c(1, 2))
-
-# Checking outliers - WY-2012, OK-2016, AK-2008
-test_df[c(847, 612, 27), ]
-
-# Review test results and check for high leverage and large residual
-test_results <- augment(test6)
-head(test_results)
-summary(test_results)
-test_results %>%
-  select(.cooksd) %>%
-  arrange(desc(.cooksd)) %>%
-  top_n(10)
-
-outliers <- test_results %>%
-  filter(.cooksd > .02 | abs(.std.resid) > 3)
-
-outliers %>%
-  inner_join(test_df, by = c("gun_rate", "own_proxy", "reg_west", "buy_reg")) %>%
-  select(state, year, all_rate, .fitted, .hat, .cooksd, .se.fit, .std.resid) %>%
-  arrange(.cooksd)
+# Checking outliers - AK-2008, OK-2016, AK-2013 
+test_df[c(10, 318, 12), ]
 
 # Plot Gain Curve for Model
 GainCurvePlot(test_df, "predict", "gun_rate", "Proxy Ownership Model Results")
