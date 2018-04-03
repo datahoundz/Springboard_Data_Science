@@ -1,5 +1,9 @@
 # Machine Learning Code
 
+library(ranger)
+library(vtreat)
+
+
 # ==================================================================================
 # 
 # Structure a table that includes variables of interest for linear regression model
@@ -126,3 +130,75 @@ test_df[c(10, 318, 12), ]
 
 # Plot Gain Curve for Model
 GainCurvePlot(test_df, "predict", "gun_rate", "Proxy Ownership Model Results")
+
+
+# ==================================================================================
+# 
+# Develop model utilizing Random Forest approach
+# 
+# ==================================================================================
+
+# Create table for use with ranger package
+rf_data_df <- sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(population_df, by = join_key) %>%
+  select(-land_area, -pop.y, -pop.x) %>%
+  left_join(regions_df, by = "state") %>%
+  select(year, state, usps_st, reg_code, subreg_code, gun_rate, pop_density) %>%
+  left_join(gun_own_prx_df, by = join_key) %>%
+  left_join(laws_cat_df, by = join_key) %>%
+  filter(year >= 1999)
+
+# Convert region/subregion to factor for linear regression
+rf_data_df$reg_code <- factor(rf_data_df$reg_code)
+rf_data_df$subreg_code <- factor(rf_data_df$subreg_code)
+
+# Create variable for reg_west T/F per feedback from initial model
+# Deciding to create separate variable for each to test
+rf_data_df <- rf_data_df %>%
+  mutate(reg_west = reg_code == 4,
+         reg_neast = reg_code == 1,
+         reg_midw = reg_code == 2,
+         reg_south = reg_code == 3)
+
+str(rf_data_df)
+outcome <- c("gun_rate")
+var_names <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
+               "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
+               "immunity_", "dom_viol")
+
+
+# Split into train & test data sets at 50/50 ratio
+gp <- runif(nrow(rf_data_df))
+rf_train <- rf_data_df[gp < 0.50, ]
+rf_test <- rf_data_df[gp >= 0.50, ]
+dim(rf_train)
+dim(rf_test)
+
+# Create formula
+fml <- paste(outcome, "~", paste(var_names, collapse = " + "))
+
+# Fit the model
+model_rf <- ranger(fml,
+                   rf_train,
+                   num.trees = 500,
+                   respect.unordered.factors = "order", 
+                   seed = 123)
+model_rf
+
+rf_test$predict <- predict(model_rf, rf_test)$predictions
+
+cor(rf_test$gun_rate, rf_test$predict)^2
+(rf_rmse <- sqrt(mean((rf_test$predict - rf_test$gun_rate)^2)))
+# r2 of 0.887 and RMSE of 1.05 using gun law variables only
+
+ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
+  geom_point() + 
+  geom_abline()
+
+
+outcome <- c("gun_rate")
+var_names <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
+               "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
+               "immunity_", "dom_viol", "reg_west", "reg_neast", "reg_midw", "reg_south",
+               "subreg_code", "pop_density", "own_proxy")
