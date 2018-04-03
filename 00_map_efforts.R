@@ -48,7 +48,7 @@ map_data_df <- regions_df %>%
   mutate(all_qnt = ntile(all_rate, qnt),
          fsr_qnt = ntile(gun_rate, qnt),
          pct_gun_qnt = ntile(gun_pct, qnt)) %>%
-  inner_join(homicides_df, by = join_key) %>%
+  left_join(homicides_df, by = join_key) %>%
   mutate(hom_qnt = ntile(hom_rate, qnt)) %>%
   inner_join(law_chg_df, by = "state") %>%
   mutate(law_qnt = ntile(law_chg, qnt)) %>%
