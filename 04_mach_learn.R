@@ -1,7 +1,9 @@
 # Machine Learning Code
 
+library(stringr)
 library(ranger)
 library(vtreat)
+library(xgboost)
 
 
 # ==================================================================================
@@ -83,6 +85,8 @@ summary(mod1)
 # 
 # ==================================================================================
 
+
+
 # Design, test and run multi-variate linear model
 mod2 <- lm(gun_rate ~ own_proxy + buy_reg + reg_west, train_df)
 
@@ -147,6 +151,7 @@ rf_data_df <- sui_method_df %>%
   select(year, state, usps_st, reg_code, subreg_code, gun_rate, pop_density) %>%
   left_join(gun_own_prx_df, by = join_key) %>%
   left_join(laws_cat_df, by = join_key) %>%
+  left_join(state_laws_df, by = join_key) %>%
   filter(year >= 1999)
 
 # Convert region/subregion to factor for linear regression
@@ -162,12 +167,18 @@ rf_data_df <- rf_data_df %>%
          reg_south = reg_code == 3)
 
 str(rf_data_df)
+
+# Get law variables from state_codes_df and create law category variable
+str(state_codes_df)
+law_vars <- unique(state_codes_df$var_name)
+law_cats <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
+              "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
+              "immunity_", "dom_viol")
+
+
 outcome <- c("gun_rate")
-var_names <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
-               "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
-               "immunity_", "dom_viol")
-
-
+var_names <- law_cats
+  
 # Split into train & test data sets at 50/50 ratio
 gp <- runif(nrow(rf_data_df))
 rf_train <- rf_data_df[gp < 0.50, ]
@@ -190,15 +201,71 @@ rf_test$predict <- predict(model_rf, rf_test)$predictions
 
 cor(rf_test$gun_rate, rf_test$predict)^2
 (rf_rmse <- sqrt(mean((rf_test$predict - rf_test$gun_rate)^2)))
-# r2 of 0.887 and RMSE of 1.05 using gun law variables only
+# r2 of 0.873 and RMSE of 1.09 using gun law category variables only
 
 ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
-  geom_point() + 
+  geom_text() + 
   geom_abline()
 
+GainCurvePlot(rf_test, "predict", "gun_rate", "Random Forest Law Category Model")
+
+# ==================================================================================
+# 
+# Apply Random Forest approach to specific law variables
+# 
+# ==================================================================================
 
 outcome <- c("gun_rate")
-var_names <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
-               "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
-               "immunity_", "dom_viol", "reg_west", "reg_neast", "reg_midw", "reg_south",
-               "subreg_code", "pop_density", "own_proxy")
+var_names <- law_vars
+
+# Split into train & test data sets at 50/50 ratio
+gp <- runif(nrow(rf_data_df))
+rf_train <- rf_data_df[gp < 0.50, ]
+rf_test <- rf_data_df[gp >= 0.50, ]
+dim(rf_train)
+dim(rf_test)
+
+# Create formula
+fml <- paste(outcome, "~", paste(var_names, collapse = " + "))
+
+# Fit the model
+model_rf <- ranger(fml,
+                   rf_train,
+                   num.trees = 500,
+                   respect.unordered.factors = "order", 
+                   seed = 123)
+# Review model
+model_rf
+
+rf_test$predict <- predict(model_rf, rf_test)$predictions
+
+cor(rf_test$gun_rate, rf_test$predict)^2
+(rf_rmse <- sqrt(mean((rf_test$predict - rf_test$gun_rate)^2)))
+# r2 of 0.863 and RMSE of 1.15 using gun law variables only
+
+ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
+  geom_text() + 
+  geom_abline()
+
+GainCurvePlot(rf_test, "predict", "gun_rate", "Random Forest Law Category Model")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Saving initial var_names code for later model
+# outcome <- c("gun_rate")
+# var_names <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
+#                "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
+#                "immunity_", "dom_viol", "reg_west", "reg_neast", "reg_midw", "reg_south",
+#                "subreg_code", "pop_density", "own_proxy")
