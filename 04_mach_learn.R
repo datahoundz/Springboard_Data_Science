@@ -55,15 +55,15 @@ View(mach_data_df)
 # ==================================================================================
 
 # Split into train & test data sets at 50/50 ratio
-gp <- runif(nrow(mach_data_df))
-train_df <- mach_data_df[gp < 0.50, ]
-test_df <- mach_data_df[gp >= 0.50, ]
-dim(train_df)
-dim(test_df)
+# gp <- runif(nrow(mach_data_df))
+# train_df <- mach_data_df[gp < 0.50, ]
+# test_df <- mach_data_df[gp >= 0.50, ]
+# dim(train_df)
+# dim(test_df)
 
-# # Play with 2013 as train and balance as test
-# train_df <- mach_data_df %>% filter(year == 2013)
-# test_df <- mach_data_df %>% filter(year != 2013)
+# # Use 2013 as train and balance as test
+train_df <- mach_data_df %>% filter(year == 2013)
+test_df <- mach_data_df %>% filter(year != 2013)
 
 # ==================================================================================
 # 
@@ -76,7 +76,7 @@ train_df[ , 8:ncol(train_df)] %>%
   cor()
 
 # Check single variable linear models
-mod1 <- lm(gun_rate ~ pop_density, train_df)
+mod1 <- lm(gun_rate ~ buy_reg, train_df)
 summary(mod1)
 
 # ==================================================================================
@@ -85,10 +85,8 @@ summary(mod1)
 # 
 # ==================================================================================
 
-
-
 # Design, test and run multi-variate linear model
-mod2 <- lm(gun_rate ~ own_proxy + buy_reg + reg_west, train_df)
+mod2 <- lm(gun_rate ~ own_rate + buy_reg + reg_west, train_df)
 
 # Check results
 summary(mod2)
@@ -96,18 +94,18 @@ summary(augment(mod2))
 confint(mod2)
 anova(mod2)
 
-# Most effective variables are own_proxy, buy_reg and reg_west
+# Most effective variables are own_rate, buy_reg and reg_west
 # pop_density effect plummeted when combined with other variables
 # lawtotal similar in effect to buy_reg but inlcudes laws unrelated to dependent variable
-# siegel_rate (avg own_proxy for 1981-2013) oddly more accurate than annual own_proxy,
-# but annual own_proxy is a more statistically relevant value to utilize
+
+
 
 # Residual & Q-Q Plot code from linear regression exercise
 par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
 plot(mod2, which = c(1, 2)) # "which" argument optional
 
-# Checking outliers - WV-2016, WY-2012, SD-2007
-train_df[c(435, 449, 372), ]
+# Checking outliers - AK-2013, OK-2013, WA-2013
+train_df[c(2, 36, 47), ]
 
 # ==================================================================================
 # 
@@ -129,8 +127,8 @@ test_df$predict <- predict(mod2, test_df)
 # Residual & Q-Q Plot
 plot(test2, which = c(1, 2))
 
-# Checking outliers - AK-2008, OK-2016, AK-2013 
-test_df[c(10, 318, 12), ]
+# Checking outliers - WY-2012, OK-2016, MT-2015 
+test_df[c(847, 612, 441), ]
 
 # Plot Gain Curve for Model
 GainCurvePlot(test_df, "predict", "gun_rate", "Proxy Ownership Model Results")
