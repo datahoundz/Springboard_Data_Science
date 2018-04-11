@@ -7,6 +7,7 @@
 library(rgdal)
 library(rgeos)
 library(ggplot2)
+library(ggforce)
 library(maptools)
 
 
@@ -467,7 +468,7 @@ mp_fsr_chg
 
 # ===================================================================
 # 
-# Map Gun Laws by Category ---- NOT WORKING???
+# Map Gun Laws by Category ---- WORKING
 # 
 # ===================================================================
 
@@ -476,6 +477,22 @@ laws_cat_df %>%
   group_by(state) %>%
   gather(3:16, key = law_cat, value = law_cnt) %>%
   left_join(regions_df, by = "state") -> map_law_df
+
+unique(map_law_df$law_cat)
+law_cat_names <- c("deal_reg" = "Dealer Regulations",
+                   "buy_reg" = "Buyer Regulations",
+                   "high_risk" = "High Risk Restrictions",
+                   "bkgrnd_chk" = "Background Checks",
+                   "ammo_reg" = "Ammunition Regulations",
+                   "poss_reg" = "Possession Regulations",
+                   "conceal_reg" = "Concealed Carry Permits",
+                   "assault_mag" = "Assault Weapon/Magazine Bans",
+                   "child_acc" = "Child Access Prevention",
+                   "gun_traff" = "Gun Trafficking Laws",
+                   "stnd_grnd" = "NO Stand Your Ground Laws",
+                   "pre_empt" = "NO Preemption of Local Laws",
+                   "immunity_" = "NO Immunity for Gun Makers",
+                   "dom_viol" = "Domestic Violence Restrictions")
 
 gg <- ggplot()
 
@@ -514,9 +531,9 @@ gg <- gg + coord_map() +
   ylab("") +
   labs(fill = "") +
   labs(title = "State Gun Laws by Category", 
-       subtitle = "") +
+       subtitle = "Data for 2016") +
   labs(caption = "Source: Boston University School of Public Health") +
-  facet_wrap(~ law_cat, ncol = 5)
+  facet_wrap(~ law_cat, ncol = 5, labeller = as_labeller(law_cat_names))
 
 gg <- gg + theme(panel.border=element_blank())
 gg <- gg + theme(panel.spacing=unit(3, "lines"))
