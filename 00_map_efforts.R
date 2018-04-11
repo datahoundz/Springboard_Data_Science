@@ -8,7 +8,6 @@ library(rgdal)
 library(rgeos)
 library(ggplot2)
 library(maptools)
-library(viridis)
 
 
 # get map from 
@@ -148,7 +147,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(prx_qnt),       #### set map variable 
+                    aes(fill = as.factor(own_qnt),       #### set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -171,8 +170,9 @@ gg <- gg + coord_map() +
   ylab("") +
   labs(fill = "Gun Ownership Level") +
   labs(title = "Gun Ownership Rates", 
-       subtitle = "Proxy Ownership Rates for 2016") +
-  labs(caption = "Source: Boston University School of Public Health") 
+       subtitle = "Ownership Rates for 2013") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al
+       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") 
 
 gg <- gg + theme(panel.border=element_blank())
 gg <- gg + theme(panel.spacing=unit(3, "lines"))
@@ -463,3 +463,60 @@ gg <- gg + theme(legend.position = "bottom")
 
 mp_fsr_chg <- gg
 mp_fsr_chg
+
+
+# ===================================================================
+# 
+# Map Gun Laws by Category ---- NOT WORKING???
+# 
+# ===================================================================
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_law_df,            ## set data source
+                    map = us_map,
+                    aes(fill = as.factor(buy_reg > 0),       #### set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_law_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = c("#c6dbef", "#08306b")) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "Buyer Regulation Laws") +
+  labs(title = "State Gun Laws by Category", 
+       subtitle = "Laws in 2016") +
+  labs(caption = "Source: Boston University School of Public Health") 
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_law_cats <- gg
+mp_law_cats
