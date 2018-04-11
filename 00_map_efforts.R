@@ -475,7 +475,6 @@ laws_cat_df %>%
   filter(year == 2016) %>%
   group_by(state) %>%
   gather(3:16, key = law_cat, value = law_cnt) %>%
-  filter(law_cat == "buy_reg") %>%
   left_join(regions_df, by = "state") -> map_law_df
 
 gg <- ggplot()
@@ -515,8 +514,9 @@ gg <- gg + coord_map() +
   ylab("") +
   labs(fill = "") +
   labs(title = "State Gun Laws by Category", 
-       subtitle = "Laws in 2016") +
-  labs(caption = "Source: Boston University School of Public Health") 
+       subtitle = "") +
+  labs(caption = "Source: Boston University School of Public Health") +
+  facet_wrap(~ law_cat, ncol = 5)
 
 gg <- gg + theme(panel.border=element_blank())
 gg <- gg + theme(panel.spacing=unit(3, "lines"))
