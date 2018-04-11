@@ -471,6 +471,13 @@ mp_fsr_chg
 # 
 # ===================================================================
 
+laws_cat_df %>%
+  filter(year == 2016) %>%
+  group_by(state) %>%
+  gather(3:16, key = law_cat, value = law_cnt) %>%
+  filter(law_cat == "buy_reg") %>%
+  left_join(regions_df, by = "state") -> map_law_df
+
 gg <- ggplot()
 
 gg <- gg + geom_map(
@@ -485,7 +492,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_law_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(buy_reg > 0),       #### set map variable 
+                    aes(fill = as.factor(law_cnt > 0),       #### set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -506,7 +513,7 @@ gg <- gg + coord_map() +
   # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
   xlab("") +
   ylab("") +
-  labs(fill = "Buyer Regulation Laws") +
+  labs(fill = "") +
   labs(title = "State Gun Laws by Category", 
        subtitle = "Laws in 2016") +
   labs(caption = "Source: Boston University School of Public Health") 
