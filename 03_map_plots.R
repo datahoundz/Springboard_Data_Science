@@ -51,9 +51,9 @@ map_data_df <- regions_df %>%
   left_join(homicides_df, by = join_key) %>%
   mutate(hom_qnt = ntile(hom_rate, qnt)) %>%
   inner_join(law_chg_df, by = "state") %>%
-  mutate(law_qnt = ntile(law_chg, qnt)) %>%
+  mutate(law_qnt = ntile(law_chg, 4)) %>%
   inner_join(fsr_chg_df, by = "state") %>%
-  mutate(fsr_qnt = ntile(fsr_chg, qnt))
+  mutate(fsr_qnt = ntile(fsr_chg, 4))
 
 # ===================================================================
 # 
@@ -68,9 +68,9 @@ myBlues = brewer.pal(n = 9, "Blues")[3:9]
 grade_colors <- c("A" = "#08306B", "B" = "#08519C", "C" = "#4292C6", "D" = "#9ECAE1", "F" = "#C6DBEF")
 qnt3_colors <- c("1" = "#C6DBEF", "2" = "#4292C6", "3" = "#08306B")
 qnt3_labels <- c("1" = "Low", "2" = "Med", "3" = "High")
-qnt4_colors <- c("4" = "#C6DBEF", "3" = "#6BAED6", "2" = "#2171B5", "1" = "#08306B")
+qnt4_colors <- c("1" = "#C6DBEF", "2" = "#6BAED6", "3" = "#2171B5", "4" = "#08306B")
 map_law_labels <- c("1" = "Reduced", "2" = "Unchanged", "3" = "Small Increase", "4" = "Large Increase")
-
+map_fsr_labels <- c("1" = "Decrease-Sm Increase", "2" = "Sm-Mod Increase", "3" = "Moderate Increase", "4" = "Large Increase")
 
 # ===================================================================
 # 
@@ -92,7 +92,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = grade,       #### set map variable 
+                    aes(fill = grade,       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -130,7 +130,7 @@ mp_giff_grd
 
 # ===================================================================
 # 
-# Map Proxy Gun Ownership Rates
+# Map Gun Ownership Rates
 # 
 # ===================================================================
 
@@ -148,7 +148,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(own_qnt),       #### set map variable 
+                    aes(fill = as.factor(own_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -172,8 +172,7 @@ gg <- gg + coord_map() +
   labs(fill = "Gun Ownership Level") +
   labs(title = "Gun Ownership Rates", 
        subtitle = "Ownership Rates for 2013") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al
-       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") 
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") 
 
 gg <- gg + theme(panel.border=element_blank())
 gg <- gg + theme(panel.spacing=unit(3, "lines"))
@@ -205,7 +204,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(all_qnt),       #### set map variable 
+                    aes(fill = as.factor(all_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -261,7 +260,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(fsr_qnt),       #### set map variable 
+                    aes(fill = as.factor(fsr_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -317,7 +316,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(hom_qnt),       #### set map variable 
+                    aes(fill = as.factor(hom_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -373,7 +372,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(law_qnt),       #### set map variable 
+                    aes(fill = as.factor(law_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -390,7 +389,7 @@ gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=
 
 gg <- gg + coord_map() +
   theme_bw() +
-  scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
+  scale_fill_manual(values = qnt4_colors, labels = map_law_labels) +
   # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
   xlab("") +
   ylab("") +
@@ -429,7 +428,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(fsr_qnt),       #### set map variable 
+                    aes(fill = as.factor(fsr_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -446,7 +445,7 @@ gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=
 
 gg <- gg + coord_map() +
   theme_bw() +
-  scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
+  scale_fill_manual(values = qnt4_colors, labels = map_fsr_labels) +
   # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
   xlab("") +
   ylab("") +
@@ -468,7 +467,7 @@ mp_fsr_chg
 
 # ===================================================================
 # 
-# Map Gun Laws by Category ---- WORKING
+# Map Gun Laws by Category ---- WORKING!
 # 
 # ===================================================================
 
@@ -508,7 +507,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_law_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(law_cnt > 0),       #### set map variable 
+                    aes(fill = as.factor(law_cnt > 0),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
