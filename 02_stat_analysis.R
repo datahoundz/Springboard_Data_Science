@@ -1077,7 +1077,7 @@ sui_method_df %>%
             x = 2010, y = 17, hjust = 0.5, vjust = 1, size = 3.5, color = "blue", inherit.aes = FALSE) +
   scale_y_continuous(expand = c(0, 0), limits = c(0,18)) +
   ylab("Annual CDC Firearm Suicide Rate") +
-  xlab("Year") +
+  xlab("") +
   labs(color = "Total Laws") +
   labs(title = "Firearm Suicide Rate Trend: States that Reduced Gun Laws", 
        subtitle = "Rate: Deaths per 100,000 Population") +
@@ -1101,7 +1101,7 @@ sui_method_df %>%
             x = 2010, y = 17, hjust = 0.5, vjust = 1, size = 3.5, color = "blue", inherit.aes = FALSE) +
   scale_y_continuous(expand = c(0, 0), limits = c(0,18)) +
   ylab("Annual CDC Firearm Suicide Rate") +
-  xlab("Year") +
+  xlab("") +
   labs(color = "Total Laws") +
   labs(title = "Firearm Suicide Rate Trend: States that Significantly Increased Gun Laws", 
        subtitle = "Rate: Deaths per 100,000 Population") +
