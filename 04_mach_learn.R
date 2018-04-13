@@ -34,7 +34,8 @@ mach_data_df <- mach_data_df %>%
   mutate(reg_west = reg_code == 4,
          reg_neast = reg_code == 1,
          reg_midw = reg_code == 2,
-         reg_south = reg_code == 3)
+         reg_south = reg_code == 3,
+         reg_mtn = subreg_code == 8)
 
 # Factor in national suicide rate to adjust for rise since 2008
 nat_suicides <- sui_method_df %>%
@@ -75,9 +76,10 @@ test_df <- mach_data_df %>% filter(year != 2013)
 train_df[ , 8:ncol(train_df)] %>%
   cor()
 
+
 # Check single variable linear models
 mod1 <- lm(gun_rate ~ buy_reg, train_df)
-summary(mod1)
+summary(mod1) 
 
 # ==================================================================================
 # 
