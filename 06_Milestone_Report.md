@@ -60,3 +60,31 @@ The Northeast has the lowest gun ownership rates, while the South and West displ
 ![](06_Milestone_Report_files/figure-markdown_github/own_rate_boxplot-1.png)
 
 ![](06_Milestone_Report_files/figure-markdown_github/own_rate_map-1.png)
+
+### Gun Ownership Correlates with OVERALL Suicide Rates
+
+A positive correlation of 0.644 and an r2 of 0.415 exists between a state's overall suicide rate and it's level of household gun ownership. Regional effects are particularly pronounced in the Northeast and West.
+
+    ## # A tibble: 1 x 3
+    ##       N   cor    r2
+    ##   <int> <dbl> <dbl>
+    ## 1    50 0.644 0.415
+
+![](06_Milestone_Report_files/figure-markdown_github/own_osr_plot-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/osr_map-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/own_osr_reg-1.png)
+
+### Stronger Correlation Between Gun Ownership and Firearm Suicide
+
+    ## # A tibble: 1 x 3
+    ##       N   cor    r2
+    ##   <int> <dbl> <dbl>
+    ## 1    50 0.748 0.559
+
+![](06_Milestone_Report_files/figure-markdown_github/own_fsr_plot-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/fsr_map-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/fsr_own_reg-1.png)

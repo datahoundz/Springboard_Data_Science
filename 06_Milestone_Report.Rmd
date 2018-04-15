@@ -511,7 +511,8 @@ gg <- gg + coord_map() +
   labs(fill = "Gun Ownership Level") +
   labs(title = "Gun Ownership Rates", 
        subtitle = "Ownership Rates for 2013") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") 
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al 
+       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") 
 
 gg <- gg + theme(panel.border=element_blank())
 gg <- gg + theme(panel.spacing=unit(3, "lines"))
@@ -1085,11 +1086,129 @@ gun_own_2013_df %>%
   xlab("Region") +
   labs(title = "Gun Ownership Rates by Region", 
        subtitle = "Household Gun Ownership Rates for 2013") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al 
+       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "none")
 ```
   
 ```{r own_rate_map}
 mp_own_rate
+```
+  
+### Gun Ownership Correlates with OVERALL Suicide Rates  
+
+A positive correlation of 0.644 and an r2 of 0.415 exists between a state's overall suicide rate and it's level of household gun ownership. Regional effects are particularly pronounced in the Northeast and West.
+
+```{r own_osr_cor}
+# Check strength of correlation to OVERALL Suicide Rate
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  summarize(N = n(), cor = cor(all_rate, own_rate), r2 = cor(all_rate, own_rate)^2)
+# r2 = 0.415 suggesting significant relationship
+```
+
+```{r own_osr_plot}
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = all_rate, color = region, label = usps_st)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  expand_limits(y = 0, x = 0) +
+  scale_x_continuous(labels = function(x) paste0(x*100, "%")) +
+  labs(color = "Region") +
+  ylab("CDC Overall Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Overall Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
+```
+
+```{r osr_map}
+mp_all_rate
+```
+
+```{r own_osr_reg}
+# Add geograpical dimension
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = all_rate, color = region, label = usps_st)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE) +
+  expand_limits(y = 0, x = 0) +
+  scale_x_continuous(labels = function(x) paste0(x*100, "%")) +
+  facet_grid(. ~ region) +
+  theme(legend.position = "none") +
+  labs(color = "Region") +
+  ylab("CDC Overall Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Regional Overall Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al
+       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "none")
+```
+
+
+### Stronger Correlation Between Gun Ownership and Firearm Suicide
+
+
+```{r own_fsr_cor}
+# Check strength of correlation to FIREARM Suicide Rate
+sui_method_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  summarize(N = n(), cor = cor(gun_rate, own_rate), r2 = cor(gun_rate, own_rate)^2)
+# r2 = 0.559 suggesting significant relationship
+```
+  
+```{r own_fsr_plot}
+gun_deaths_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE, color = "blue") +
+  expand_limits(y = 0, x = 0) +
+  scale_x_continuous(labels = function(x) paste0(x*100, "%")) +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Firearm Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al
+       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
+```
+
+```{r fsr_map}
+mp_fsr_rate
+```
+
+```{r fsr_own_reg}
+gun_deaths_df %>%
+  filter(year == 2013) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = own_rate, y = sui_rate, label = usps_st, color = region)) +
+  geom_text() +
+  stat_smooth(method = "lm", se = FALSE) +
+  expand_limits(y = 0, x = 0) +
+  scale_x_continuous(labels = function(x) paste0(x*100, "%")) +
+  facet_grid(. ~ region)  +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("Gun Ownership Rate") +
+  labs(title = "Regional Firearm Suicide Rates by Gun Ownership Rates", 
+       subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al
+       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "none")
 ```
 
