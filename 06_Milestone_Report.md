@@ -52,3 +52,11 @@ Time series plot of suicides broken out by firearm/other indicates major regiona
 ![](06_Milestone_Report_files/figure-markdown_github/reg_sui_method-1.png)
 
 ![](06_Milestone_Report_files/figure-markdown_github/state_sui_method-1.png)
+
+### Gun Ownership Rates Vary by Region
+
+The Northeast has the lowest gun ownership rates, while the South and West display much higher levels.
+
+![](06_Milestone_Report_files/figure-markdown_github/own_rate_boxplot-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/own_rate_map-1.png)

@@ -240,6 +240,15 @@ laws_cat_df <- state_laws_df %>%
            incidentall + dvro) %>%
   select(state, year, contains("_"))
 
+# Calculate change in number of laws by state between 1999 and 2016, assign quartile
+law_chg_df <- state_laws_total_df %>%
+  select(state, year, lawtotal) %>%
+  filter(year == 1999 | year == 2016) %>%
+  spread(year, lawtotal, sep = "_") %>%
+  mutate(law_chg = year_2016 - year_1999, law_quant = ntile(law_chg, 4)) %>%
+  arrange(desc(law_chg))
+
+
 # =======================================================================
 # 
 # Import Giffords Law Center Gun Law Data
@@ -298,6 +307,21 @@ all_suicides_df <- all_suicides_df %>%
   rename(all_sui_pop = Population) %>%
   rename(all_sui_rate = 'Crude Rate')
 
+# Create new suicide method table and calculate pct of suicides by gun
+sui_method_df <-  all_suicides_df %>%
+  left_join(gun_deaths_df, by = join_key) %>%
+  filter(state != "District of Columbia") %>%
+  select(state, year, pop, all_cnt = all_sui_cnt, all_rate = all_sui_rate, gun_cnt = sui_cnt, gun_rate = sui_rate) %>%
+  mutate(gun_pct = gun_cnt/all_cnt, other_cnt = all_cnt - gun_cnt, other_rate = all_rate - gun_rate)
+
+# Create Firearm Suicide Rate change 1999-2016 to plot against law change
+fsr_chg_df <- sui_method_df %>%
+  select(state, yr = year, gun_rate) %>%
+  filter(yr == 1999 | yr == 2016) %>%
+  spread(yr, gun_rate, sep = "_") %>%
+  mutate(fsr_chg = yr_2016 - yr_1999, fsr_quant = ntile(-fsr_chg, 4)) %>%
+  arrange(desc(fsr_chg))
+
 # =======================================================================
 # 
 # Import Gun Ownership Data
@@ -322,6 +346,543 @@ gun_own_prx_df <- gun_own_prx_df %>%
 
 
 # That's all for the data importing.
+
+```
+
+```{r map_code, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# get map from 
+download.file("https://gist.githubusercontent.com/hrbrmstr/51f961198f65509ad863/raw/219173f69979f663aa9192fbe3e115ebd357ca9f/us_states_hexgrid.geojson", "us_states_hexgrid.geojson")
+us <- readOGR("us_states_hexgrid.geojson")
+centers <- cbind.data.frame(data.frame(gCentroid(us, byid=TRUE), id=us@data$iso3166_2))
+us_map <- fortify(us, region="iso3166_2")
+
+## =================================================================
+
+## My edits to original source code
+
+## Remove DC from map
+us_map <- us_map %>%
+  filter(id != "DC")
+
+## Replace w/ my data set
+giff_grd_df %>%
+  filter(year == 2016) %>%
+  mutate(score = round(law_score)) %>%
+  left_join(grd_conv_df, by = c("score" = "GPA")) %>%
+  select(state, grade = Letter) ->  giff_letter_mp
+
+qnt <- 3
+
+map_data_df <- regions_df %>%
+  select(state, region, usps_st) %>%
+  arrange(state) %>%
+  left_join(giff_grd_df, by = "state") %>%
+  filter(year == 2016) %>%
+  left_join(giff_letter_mp, by = "state") %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  mutate(own_qnt = ntile(own_rate, qnt)) %>%
+  left_join(gun_own_prx_df, by = join_key) %>%
+  mutate(prx_qnt = ntile(own_proxy, qnt)) %>%
+  left_join(sui_method_df, by = join_key) %>%
+  mutate(all_qnt = ntile(all_rate, qnt),
+         fsr_qnt = ntile(gun_rate, qnt),
+         pct_gun_qnt = ntile(gun_pct, qnt)) %>%
+  left_join(homicides_df, by = join_key) %>%
+  mutate(hom_qnt = ntile(hom_rate, qnt)) %>%
+  inner_join(law_chg_df, by = "state") %>%
+  mutate(law_qnt = ntile(law_chg, 4)) %>%
+  inner_join(fsr_chg_df, by = "state") %>%
+  mutate(fsr_qnt = ntile(fsr_chg, 4))
+
+# ===================================================================
+# 
+# Set colors for mapping continuous and discrete values
+# 
+# ===================================================================
+
+library(RColorBrewer)
+myBlues = brewer.pal(n = 9, "Blues")[3:9]
+# c("#C6DBEF", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C", "#08306B")
+
+grade_colors <- c("A" = "#08306B", "B" = "#08519C", "C" = "#4292C6", "D" = "#9ECAE1", "F" = "#C6DBEF")
+qnt3_colors <- c("1" = "#C6DBEF", "2" = "#4292C6", "3" = "#08306B", na.value = "black")
+qnt3_labels <- c("1" = "Low", "2" = "Med", "3" = "High")
+qnt4_colors <- c("1" = "#C6DBEF", "2" = "#6BAED6", "3" = "#2171B5", "4" = "#08306B")
+map_law_labels <- c("1" = "Reduced", "2" = "Unchanged", "3" = "Small Increase", "4" = "Large Increase")
+map_fsr_labels <- c("1" = "Decrease-Sm Increase", "2" = "Sm-Mod Increase", "3" = "Moderate Increase", "4" = "Large Increase")
+
+# ===================================================================
+# 
+# Map Giffords Law Grade
+# 
+# ===================================================================
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_data_df,            ## set data source
+                    map = us_map,
+                    aes(fill = grade,       ## set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_data_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = grade_colors) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "Law Grade") +
+  labs(title = "Giffords Law Center: State Gun Law Grades", 
+       subtitle = "Grades for 2016") +
+  labs(caption = "Source: Giffords Law Center") 
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_giff_grd <- gg
+mp_giff_grd
+
+# ===================================================================
+# 
+# Map Gun Ownership Rates
+# 
+# ===================================================================
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_data_df,            ## set data source
+                    map = us_map,
+                    aes(fill = as.factor(own_qnt),       ## set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_data_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "Gun Ownership Level") +
+  labs(title = "Gun Ownership Rates", 
+       subtitle = "Ownership Rates for 2013") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") 
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_own_rate <- gg
+mp_own_rate
+
+# ===================================================================
+# 
+# Map OVERALL Suicide Rates
+# 
+# ===================================================================
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_data_df,            ## set data source
+                    map = us_map,
+                    aes(fill = as.factor(all_qnt),       ## set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_data_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "Overall Suicide Rates") +
+  labs(title = "OVERALL Suicide Rates", 
+       subtitle = "Rates for 2016") +
+  labs(caption = "Source: Centers for Disease Control") 
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_all_rate <- gg
+mp_all_rate
+
+# ===================================================================
+# 
+# Map FIREARM Suicide Rates
+# 
+# ===================================================================
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_data_df,            ## set data source
+                    map = us_map,
+                    aes(fill = as.factor(fsr_qnt),       ## set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_data_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "Firearm Suicide Rates") +
+  labs(title = "FIREARM Suicide Rates", 
+       subtitle = "Rates for 2016") +
+  labs(caption = "Source: Centers for Disease Control") 
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_fsr_rate <- gg
+mp_fsr_rate
+
+# ===================================================================
+# 
+# Map FIREARM HOMICIDE Rates
+# 
+# ===================================================================
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_data_df,            ## set data source
+                    map = us_map,
+                    aes(fill = as.factor(hom_qnt),       ## set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_data_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "Firearm Homicide Rates") +
+  labs(title = "Firearm HOMICIDE Rates", 
+       subtitle = "Rates for 2016") +
+  labs(caption = "Source: Centers for Disease Control") 
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_hom_rate <- gg
+mp_hom_rate
+
+# ===================================================================
+# 
+# Map Gun Law Change
+# 
+# ===================================================================
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_data_df,            ## set data source
+                    map = us_map,
+                    aes(fill = as.factor(law_qnt),       ## set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_data_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = qnt4_colors, labels = map_law_labels) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "Gun Law Change") +
+  labs(title = "Changes in Number of Gun Laws", 
+       subtitle = "Net Change from 1999-2016") +
+  labs(caption = "Boston University School of Public Health") 
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_law_chg <- gg
+mp_law_chg
+
+# ===================================================================
+# 
+# Map FSR Change
+# 
+# ===================================================================
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_data_df,            ## set data source
+                    map = us_map,
+                    aes(fill = as.factor(fsr_qnt),       ## set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_data_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = qnt4_colors, labels = map_fsr_labels) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "Firearm Suicide Change") +
+  labs(title = "Changes in Firearm Suicide Rates", 
+       subtitle = "Net Change from 1999-2016") +
+  labs(caption = "Centers for Disease Control") 
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_fsr_chg <- gg
+mp_fsr_chg
+
+
+# ===================================================================
+# 
+# Map Gun Laws by Category ---- WORKING!
+# 
+# ===================================================================
+
+laws_cat_df %>%
+  filter(year == 2016) %>%
+  group_by(state) %>%
+  gather(3:16, key = law_cat, value = law_cnt) %>%
+  left_join(regions_df, by = "state") -> map_law_df
+
+unique(map_law_df$law_cat)
+law_cat_names <- c("deal_reg" = "Dealer Regulations",
+                   "buy_reg" = "Buyer Regulations",
+                   "high_risk" = "High Risk Restrictions",
+                   "bkgrnd_chk" = "Background Checks",
+                   "ammo_reg" = "Ammunition Regulations",
+                   "poss_reg" = "Possession Regulations",
+                   "conceal_reg" = "Concealed Carry Permits",
+                   "assault_mag" = "Assault Weapon/Magazine Bans",
+                   "child_acc" = "Child Access Prevention",
+                   "gun_traff" = "Gun Trafficking Laws",
+                   "stnd_grnd" = "NO Stand Your Ground Laws",
+                   "pre_empt" = "NO Preemption of Local Laws",
+                   "immunity_" = "NO Immunity for Gun Makers",
+                   "dom_viol" = "Domestic Violence Restrictions")
+
+gg <- ggplot()
+
+gg <- gg + geom_map(
+  data = us_map,
+  map = us_map,
+  aes(x = long,
+      y = lat,
+      map_id = id),
+  color = "white",
+  size = 0.5
+)
+
+gg <- gg + geom_map(data = map_law_df,            ## set data source
+                    map = us_map,
+                    aes(fill = as.factor(law_cnt > 0),       ## set map variable 
+                        map_id = usps_st))      ## set map label data
+
+gg <- gg + geom_map(
+  data = map_law_df,                              ## set data source again
+  map = us_map,
+  aes(map_id = usps_st),                        ## set map label data
+  fill = "#ffffff",
+  alpha = 0,
+  color = "white",
+  show.legend = FALSE
+) 
+
+gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=4)
+
+gg <- gg + coord_map() +
+  theme_bw() +
+  scale_fill_manual(values = c("#c6dbef", "#08306b")) +
+  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  xlab("") +
+  ylab("") +
+  labs(fill = "") +
+  labs(title = "State Gun Laws by Category", 
+       subtitle = "Data for 2016") +
+  labs(caption = "Source: Boston University School of Public Health") +
+  facet_wrap(~ law_cat, ncol = 5, labeller = as_labeller(law_cat_names))
+
+gg <- gg + theme(panel.border=element_blank())
+gg <- gg + theme(panel.spacing=unit(3, "lines"))
+gg <- gg + theme(panel.grid=element_blank())
+gg <- gg + theme(axis.ticks=element_blank())
+gg <- gg + theme(axis.text=element_blank())
+gg <- gg + theme(legend.position = "bottom")
+
+mp_law_cats <- gg
+mp_law_cats
+
 
 ```
 
@@ -419,12 +980,6 @@ gun_deaths_df %>%
 Overall suicide rates display a strong negative correlation (-0.759) with a state's population density and also exhibit significant regional influences. States in the Northeast have much lower rates, while states in the Mountain subregion experience sharply higher levels than the rest of the country. This holds even allowing for population density as shown by Mountain vs Great Plains divergence at similar population densities.  
 
 ```{r osr_by_pop_density}
-# Create new suicide method table and calculate pct of suicides by gun
-sui_method_df <-  all_suicides_df %>%
-  left_join(gun_deaths_df, by = join_key) %>%
-  filter(state != "District of Columbia") %>%
-  select(state, year, pop, all_cnt = all_sui_cnt, all_rate = all_sui_rate, gun_cnt = sui_cnt, gun_rate = sui_rate) %>%
-  mutate(gun_pct = gun_cnt/all_cnt, other_cnt = all_cnt - gun_cnt, other_rate = all_rate - gun_rate)
 
 # Correlation equation for Population Density and Overall Suicide Rate
 pop_osr_cor <- cor(sui_method_df$all_rate, log(population_df$pop_density), use = "pairwise.complete.obs")
@@ -514,5 +1069,27 @@ sui_method_df %>%
   theme(axis.title.x=element_blank(),
         axis.ticks.x=element_blank(),
         axis.text.x=element_blank())
+```
+
+### Gun Ownership Rates Vary by Region  
+The Northeast has the lowest gun ownership rates, while the South and West display much higher levels.
+
+```{r own_rate_boxplot}
+gun_own_2013_df %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = region, y = own_rate, color = region, label = usps_st)) +
+  geom_boxplot() +
+  geom_text(position = "jitter") +
+  labs(color = "Region") +
+  ylab("Gun Ownership Rate") +
+  xlab("Region") +
+  labs(title = "Gun Ownership Rates by Region", 
+       subtitle = "Household Gun Ownership Rates for 2013") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "none")
+```
+  
+```{r own_rate_map}
+mp_own_rate
 ```
 
