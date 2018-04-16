@@ -46,14 +46,14 @@ map_data_df <- regions_df %>%
   mutate(prx_qnt = ntile(own_proxy, qnt)) %>%
   left_join(sui_method_df, by = join_key) %>%
   mutate(all_qnt = ntile(all_rate, qnt),
-         fsr_qnt = ntile(gun_rate, qnt),
+         fsr_chg_qnt = ntile(gun_rate, qnt),
          pct_gun_qnt = ntile(gun_pct, qnt)) %>%
   left_join(homicides_df, by = join_key) %>%
   mutate(hom_qnt = ntile(hom_rate, qnt)) %>%
   inner_join(law_chg_df, by = "state") %>%
-  mutate(law_qnt = ntile(law_chg, 4)) %>%
+  mutate(law_chg_qnt = ntile(law_chg, 4)) %>%
   inner_join(fsr_chg_df, by = "state") %>%
-  mutate(fsr_qnt = ntile(fsr_chg, 4))
+  mutate(fsr_chg_qnt = ntile(fsr_chg, 4))
 
 # ===================================================================
 # 
@@ -260,7 +260,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(fsr_qnt),       ## set map variable 
+                    aes(fill = as.factor(fsr_chg_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -372,7 +372,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(law_qnt),       ## set map variable 
+                    aes(fill = as.factor(law_chg_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -428,7 +428,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(fsr_qnt),       ## set map variable 
+                    aes(fill = as.factor(fsr_chg_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
