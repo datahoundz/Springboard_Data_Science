@@ -1157,7 +1157,8 @@ sui_method_df %>%
 
 
 ### Stronger Correlation Between Gun Ownership and Firearm Suicide
-
+  
+Gun ownership rates, unsurprisingly, display an even stronger relationship to the state's firearm suicide rate with a correlation of 0.748 and an r2 of 0.559. The map plot highlights regional variations in this effect as further displayed by the regional correlation plot.  
 
 ```{r own_fsr_cor}
 # Check strength of correlation to FIREARM Suicide Rate
@@ -1238,5 +1239,73 @@ gun_deaths_df %>%
   labs(caption = "Data cited by Kalesan B, Villarreal MD, Keyes KM, et al 
        Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "bottom")
+```
+  
+### Giffords Law Grades Strong Indicator of Gun Deaths 
+
+A state's Giffords Law Grade not only works as a strong predictor of both overall gun death rank and firearm suicide rates, it even helps to predict a state's overall suicide rate. This provides additional support to the possibilty that easier availability of guns may contribute to higher overall suicide rates.  
+
+```{r giff_grd_gun_dth_rnk}
+giff_grd_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(reg_code >= 0) %>%
+  ggplot(aes(x = law_grd, y = death_rnk, label = usps_st, color = region)) +
+  geom_text() +
+  facet_grid(. ~ year) +
+  labs(color = "Region") +
+  ylab("State Gun Death Rank") +
+  xlab("Giffords Gun Law Grade") +
+  labs(title = "Giffords Gun Law Grades Plotted by Gun Death Rank",
+       subtitle = "Rank: 1 = Best, 50 = Worst, Gun Death Rankings Include Homicide and Suicide Deaths") +
+  labs(caption = "Giffords Law Center Data for 2014-2016")
+```
+
+```{r giff_vs_fsr}
+giff_grd_df %>%
+  filter(year >= 2014) %>%
+  left_join(gun_deaths_df, by = join_key) %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = law_rnk, y = sui_rate, label = usps_st, color = region)) +
+  geom_text(position = "jitter") +
+  stat_smooth(method = "lm", se = FALSE) +
+  facet_grid(year ~ region) +
+  expand_limits(y = 0) +
+  labs(color = "Region") +
+  ylab("CDC Firearm Suicide Rate") +
+  xlab("Giffords Gun Law Rank") +
+  labs(title = "Giffords Gun Law Rank by CDC Firearm Suicide Rate", 
+       subtitle = "Rank: 1 = Best, 50 = Worst, Rate: Deaths per 100,000 Population") +
+  labs(caption = "Based on 2015 data from Giffords Law Center and Centers for Disease Control") +
+  theme(legend.position = "none")
+```
+  
+```{r osr_by_f_grade}
+sui_method_df %>%
+  filter(year == 2016) %>%
+  mutate(Abv_Average_Rate = all_rate > mean(all_rate)) %>%
+  gather(key = "cause", value = "rate", c(other_rate, gun_rate))  %>%
+  left_join(regions_df, value = "state") %>%
+  inner_join(giff_grd_df, by = join_key) %>%
+  mutate(Giffords_F = law_score == 0) %>%
+    ggplot(aes(x = reorder(usps_st, all_rate), y = rate, fill = cause)) +
+    facet_grid(Giffords_F ~ Abv_Average_Rate, labeller = label_both, scales = "free_y") +
+    geom_col() +
+    geom_hline(linetype = 2, aes(yintercept = mean(all_rate))) +
+    coord_flip() +
+    labs(fill = "Suicide Rate") +
+    ylab("Suicide Rate (2016)") +
+    xlab("State") +
+    labs(title = "Overall Suicide Rates and States Scoring F on Giffords Gun Law Grade", 
+         subtitle = "True/False Panels: Above Average Suicide Rate and Giffords Grade of F, Dashed Line Indicates Average") +
+    labs(caption = "Giffords Law Center & Centers for Disease Control Data for 2016") +
+    theme(legend.position = "right")
+```
+  
+```{r giff_grd_map}
+mp_giff_grd
+```
+  
+```{r giff_osr_mp}
+mp_all_rate
 ```
 

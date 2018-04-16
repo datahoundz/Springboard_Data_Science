@@ -78,6 +78,8 @@ A positive correlation of 0.644 and an r2 of 0.415 exists between a state's over
 
 ### Stronger Correlation Between Gun Ownership and Firearm Suicide
 
+Gun ownership rates, unsurprisingly, display an even stronger relationship to the state's firearm suicide rate with a correlation of 0.748 and an r2 of 0.559. The map plot highlights regional variations in this effect as further displayed by the regional correlation plot.
+
     ## # A tibble: 1 x 3
     ##       N   cor    r2
     ##   <int> <dbl> <dbl>
@@ -88,3 +90,19 @@ A positive correlation of 0.644 and an r2 of 0.415 exists between a state's over
 ![](06_Milestone_Report_files/figure-markdown_github/fsr_map-1.png)
 
 ![](06_Milestone_Report_files/figure-markdown_github/fsr_own_reg-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/fsr_own_tier-1.png)
+
+### Giffords Law Grades Strong Indicator of Gun Deaths
+
+A state's Giffords Law Grade not only works as a strong predictor of both overall gun death rank and firearm suicide rates, it even helps to predict a state's overall suicide rate. This provides additional support to the possibilty that easier availability of guns may contribute to higher overall suicide rates.
+
+![](06_Milestone_Report_files/figure-markdown_github/giff_grd_gun_dth_rnk-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/giff_vs_fsr-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/osr_by_f_grade-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/giff_grd_map-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/giff_osr_mp-1.png)
