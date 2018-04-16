@@ -390,9 +390,9 @@ map_data_df <- regions_df %>%
   left_join(homicides_df, by = join_key) %>%
   mutate(hom_qnt = ntile(hom_rate, qnt)) %>%
   inner_join(law_chg_df, by = "state") %>%
-  mutate(law_qnt = ntile(law_chg, 4)) %>%
+  mutate(law_chg_qnt = ntile(law_chg, 4)) %>%
   inner_join(fsr_chg_df, by = "state") %>%
-  mutate(fsr_qnt = ntile(fsr_chg, 4))
+  mutate(fsr_chg_qnt = ntile(fsr_chg, 4))
 
 # ===================================================================
 # 
@@ -712,7 +712,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(law_qnt),       ## set map variable 
+                    aes(fill = as.factor(law_chg_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -768,7 +768,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(fsr_qnt),       ## set map variable 
+                    aes(fill = as.factor(fsr_chg_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -1123,7 +1123,8 @@ sui_method_df %>%
   xlab("Gun Ownership Rate") +
   labs(title = "Overall Suicide Rates by Gun Ownership Rates", 
        subtitle = "Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
-  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al 
+       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "bottom")
 ```
 
@@ -1188,7 +1189,7 @@ gun_deaths_df %>%
 ```
 
 ```{r fsr_map}
-mp_fsr_rate
+mp_fsr_rate # NEED TO FIX THIS
 ```
 
 ```{r fsr_own_reg}
@@ -1210,5 +1211,32 @@ gun_deaths_df %>%
   labs(caption = "2013 ownership data cited by Kalesan B, Villarreal MD, Keyes KM, et al
        Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
   theme(legend.position = "none")
+```
+
+```{r fsr_own_tier}
+own_rate_labels <- c(
+    '1' = "Low",
+    '2' = "Medium",
+    '3' = "High"
+)
+
+# Firearm suicide rates grouped by ownership rate
+gun_deaths_df %>%
+  left_join(regions_df, by = "state") %>%
+  filter(year == 2013) %>%
+  inner_join(gun_own_2013_df, by = "state") %>%
+  filter(usps_st != "DC") %>%
+  ggplot(aes(x = reorder(usps_st, -sui_rate), y = sui_rate, fill = region)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_grid(. ~ ntile(own_rate, 3), labeller = as_labeller(own_rate_labels)) +
+  labs(fill = "Region") +
+  ylab("CDC Firearm Suicide Rate (2013)") +
+  xlab("State") +
+  labs(title = "States Ranked by Firearm Suicide Rate, Grouped by Gun Ownership Tier", 
+       subtitle = "Tier 1 = Low, Tier 2 = Med, Tier 3 = High, Household Gun Ownership Rates for 2013, CDC Rate: Deaths per 100,000 Population") +
+  labs(caption = "Data cited by Kalesan B, Villarreal MD, Keyes KM, et al 
+       Gun ownership and social gun culture Injury Prevention 2016;22:216-220.") +
+  theme(legend.position = "bottom")
 ```
 
