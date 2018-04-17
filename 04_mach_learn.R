@@ -101,7 +101,6 @@ anova(mod2)
 # lawtotal similar in effect to buy_reg but inlcudes laws unrelated to dependent variable
 
 
-
 # Residual & Q-Q Plot code from linear regression exercise
 par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
 plot(mod2, which = c(1, 2)) # "which" argument optional
@@ -250,22 +249,119 @@ ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code
 GainCurvePlot(rf_test, "predict", "gun_rate", "Random Forest Law Category Model")
 
 
+# ==================================================================================
+# 
+# Develop model w/ xgboost package to assess law variable contribution
+# 
+# ==================================================================================
+
+library(vtreat)
+library(magrittr)
+
+# Create table for use with xgboost package
+xgb_data_df <- sui_method_df %>%
+  select(state, year, fsr = gun_rate) %>%
+  left_join(laws_cat_df, by = join_key) %>%
+  filter(year >= 1999)
+
+output <- xgb_data_df$fsr
+var_names <- law_cats
+
+
+# Split into train & test data sets at 50/50 ratio
+gp <- runif(nrow(xgb_data_df))
+xgb_train <- xgb_data_df[gp < 0.50, ]
+xgb_test <- xgb_data_df[gp >= 0.50, ]
+dim(xgb_train)
+dim(xgb_test)
+
+# Create the treatment plan
+treat_plan <- designTreatmentsZ(xgb_train, var_names)
+
+# Examine scoreFrame
+scoreFrame <- treat_plan %>%
+    use_series(scoreFrame) %>%
+    select(varName, origName, code)
+
+# We only want the rows with codes "clean" or "lev"
+newvars <- scoreFrame %>%
+    filter(code %in% c("clean", "lev")) %>%
+    use_series(varName)
+
+# Create the treated training data
+xgb_train_treat <- prepare(treat_plan, xgb_train, varRestriction = newvars)
+
+# Create the treated test data
+xgb_test_treat <- prepare(treat_plan, xgb_test, varRestriction = newvars)
+
+
+#==============================================================
+# 
+# Use cross validation to determine number of trees
+# 
+#==============================================================
+
+# Run xgb.cv cross validation on xgb_train
+cv <- xgb.cv(data = as.matrix(xgb_train_treat), 
+             label = xgb_train$fsr,
+             nrounds = 100,
+             nfold = 5,
+             objective = "reg:linear",
+             eta = 0.3,
+             max_depth = 6,
+             early_stopping_rounds = 10,
+             verbose = 0)
+
+# Get the evaluation log 
+eval_log <- as.data.frame(cv$evaluation_log)
+
+# Determine number of trees to minimize training and test error
+eval_log %>% 
+  summarize(ntrees.train = which.min(train_rmse_mean), ntrees.test  = which.min(test_rmse_mean)) 
+# Use 52 trees per evaluation log results
+
+#==============================================================
+# 
+# Fit xgboost model and predict fsr
+# 
+#==============================================================
+
+xgb_model <- xgboost(data = as.matrix(xgb_train_treat),
+                          label = xgb_train$fsr,
+                          nrounds = 52,
+                          objective = "reg:linear",
+                          eta = 0.3,
+                          depth = 6,
+                          verbose = 0)
+
+# Run model on test data
+xgb_test$pred <- predict(xgb_model, as.matrix(xgb_test_treat))
+
+# Plot resulting predictions
+xgb_test %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = pred, y = fsr, color = region, label = usps_st)) + 
+  geom_text() + 
+  geom_abline() +
+  expand_limits(y = 0, x = 0)
+
+# Check r2 and RMSE
+cor(xgb_test$pred, xgb_test$fsr)^2
+sqrt(mean((xgb_test$pred - xgb_test$fsr)^2))
+# r2 = 0.871, RMSE = 1.1
+
+
+# Model, using only law categories, far outperforms manually created regression model
+# Use Gain and Cover measures as blend to evaluate critical variables
+importance_table <- xgb.importance(feature_names = var_names, model = xgb_model)
+importance_table %>%
+  mutate(gain_cover = Gain * Cover) %>%
+  arrange(desc(gain_cover))
+# buyer_reg ranks as top variable validating its selection in manual regression model
+# child_acc variable adds most to its given trees (gain), but covers a much smaller number of trees (cover).
+# Other variables drop off rapidly in influence, and bkgrnd_chk is surprisingly second to last
+
+xgb.plot.importance(importance_matrix = importance_table)
 
 
 
-
-
-
-
-
-
-
-
-
-
-# Saving initial var_names code for later model
-# outcome <- c("gun_rate")
-# var_names <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
-#                "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
-#                "immunity_", "dom_viol", "reg_west", "reg_neast", "reg_midw", "reg_south",
-#                "subreg_code", "pop_density", "own_proxy")
