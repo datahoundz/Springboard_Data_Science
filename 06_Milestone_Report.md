@@ -1,7 +1,7 @@
 Milestone Report
 ================
 Jim Scotland
-Revised: April 9, 2018
+Revised: April 17, 2018
 
 Abstract
 --------
@@ -93,6 +93,16 @@ Gun ownership rates, unsurprisingly, display an even stronger relationship to th
 
 ![](06_Milestone_Report_files/figure-markdown_github/fsr_own_tier-1.png)
 
+### Firearm Suicides Associated with Higher Overall Suicide Rates
+
+Since 1999, guns accounted for an average 58% of suicides in states with above average suicide rates and 48% of suicides in states with below average rates (average rates calculated annually).
+
+    ## # A tibble: 2 x 4
+    ##   abv_avg_rate     n deaths avg_gun_pct
+    ##   <lgl>        <int>  <int>       <dbl>
+    ## 1 FALSE          502 437229       0.486
+    ## 2 TRUE           398 210903       0.583
+
 ### Giffords Law Grades Strong Indicator of Gun Deaths
 
 A state's Giffords Law Grade not only works as a strong predictor of both overall gun death rank and firearm suicide rates, it even helps to predict a state's overall suicide rate. This provides additional support to the possibilty that easier availability of guns may contribute to higher overall suicide rates.
@@ -101,8 +111,69 @@ A state's Giffords Law Grade not only works as a strong predictor of both overal
 
 ![](06_Milestone_Report_files/figure-markdown_github/giff_vs_fsr-1.png)
 
+### Giffords "F" Grade Associated with Above Average OVERALL Suicide Rate
+
+Out of 50 states, 41 Abv Avg Suicide ratings were indicated correctly by Gifford F. Displayed data for 2016. Slightly lower accuracy in 2014 and 2015 at 38/50 each.
+
 ![](06_Milestone_Report_files/figure-markdown_github/osr_by_f_grade-1.png)
+
+    ##           Abv_Average_Rate
+    ## Giffords_F FALSE TRUE
+    ##      FALSE    21    4
+    ##      TRUE      5   20
 
 ![](06_Milestone_Report_files/figure-markdown_github/giff_grd_map-1.png)
 
 ![](06_Milestone_Report_files/figure-markdown_github/giff_osr_mp-1.png)
+
+### Total Gun Laws Vary Widely by Region and Within Regions
+
+As the state level plots below indicate, both the number of gun laws and the trend, increasing or decreasing varies significantly across the country. Even within the highly regulated Northeast, the more rural states of Vermont Maine and New Hampshire have gun laws at levels simialr to the South or Mountain west. Only twelve states, concentrated on the East and West coasts, have significantly increased the number of gun laws between 1999 and 2016. This compares to 18 states that decreased the number of laws during the same period.
+
+![](06_Milestone_Report_files/figure-markdown_github/law_state_plots-1.png)
+
+![](06_Milestone_Report_files/figure-markdown_github/law_net_chg-1.png)
+
+### Strong Inverse Relation Between Total Gun Laws and Firearm Suicide Rates
+
+A strong inverse relationship exists between the number of state gun laws and the firearm suicide rate and this relationship is even more pronounced at regional levels.
+
+    ## # A tibble: 1 x 2
+    ##       N    r2
+    ##   <int> <dbl>
+    ## 1    50 0.617
+
+![](06_Milestone_Report_files/figure-markdown_github/laws_vs_fsr_all-1.png)
+
+    ## # A tibble: 4 x 3
+    ##   region          N    r2
+    ##   <chr>       <int> <dbl>
+    ## 1 1-Northeast     9 0.814
+    ## 2 2-Midwest      12 0.841
+    ## 3 3-South        16 0.484
+    ## 4 4-West         13 0.736
+
+![](06_Milestone_Report_files/figure-markdown_github/laws_vs_fsr_reg-1.png)
+
+### Reduced Gun Laws Related to Increased Firearm Suicide Rate
+
+States that reduced their total number of gun laws saw their average FSR increase by 5X the level experienced by states that implemented 10 or more new gun laws (Large Increase).
+
+![](06_Milestone_Report_files/figure-markdown_github/law_chg_fsr_chg-1.png)
+
+### Select State Comparisons
+
+By way of comparison, Missouri eliminated a net of 10 gun laws and saw its FSR rise by 3.0 per 100,000. California implemented 33 new gun laws and saw its FSR drop by 0.5 per 100,000. Adjusting for population, Missouri saw an estimated 176 more suicides in 2016 while California saved an estimated 183 lives. The equivalent numbers for New York and South Carolina are 39 lives saved and 151 additional suicides repsectively.
+
+![](06_Milestone_Report_files/figure-markdown_github/ca_mo_plot-1.png)
+
+Preliminary Conclusions
+-----------------------
+
+Analysis to this point suggests some strong candidate variables for predicting a state's firearm suicide rate, several of which correlate with each other. These include region, gun ownership rates, the level of gun law restrictions and population density.
+
+During the machine learning phase of the project, an effort will be made to focus more closely on regional distinctions. The analysis will also shift from the simple total number of laws to explore specific law categories and perhaps even individual laws.
+
+The goal of this analysis is to explore firearm suicide; however, preliminary findings suggest that many of the candidate variables are reasonably strong predictors of overall suicide levels as well. This is to be expected as the FSR represents around half of the overall suicide rate. But it would be interesting to explore how specific classes of gun legislation or other actions might effectively reduce the overall rate, especially in states with disproprtionately high FSR levels.
+
+Another area of interest raised is the disparity between suicide rates in the Mountain and Great Plains subregions, both of which are characterized by similarly low population densities. Additionally sharp differences between neighboring states, Indiana and Illinois for example, present opportunities for more focused investigation of states with similar population profiles.
