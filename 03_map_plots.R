@@ -46,7 +46,7 @@ map_data_df <- regions_df %>%
   mutate(prx_qnt = ntile(own_proxy, qnt)) %>%
   left_join(sui_method_df, by = join_key) %>%
   mutate(all_qnt = ntile(all_rate, qnt),
-         fsr_chg_qnt = ntile(gun_rate, qnt),
+         fsr_qnt = ntile(gun_rate, qnt),
          pct_gun_qnt = ntile(gun_pct, qnt)) %>%
   left_join(homicides_df, by = join_key) %>%
   mutate(hom_qnt = ntile(hom_rate, qnt)) %>%
@@ -64,11 +64,13 @@ map_data_df <- regions_df %>%
 library(RColorBrewer)
 myBlues = brewer.pal(n = 9, "Blues")[3:9]
 # c("#C6DBEF", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C", "#08306B")
+myGreens = brewer.pal(n = 9, "Greens")[3:9]
+# c("#C7E9C0" "#A1D99B" "#74C476" "#41AB5D" "#238B45" "#006D2C" "#00441B")
 
-grade_colors <- c("A" = "#08306B", "B" = "#08519C", "C" = "#4292C6", "D" = "#9ECAE1", "F" = "#C6DBEF")
-qnt3_colors <- c("1" = "#C6DBEF", "2" = "#4292C6", "3" = "#08306B")
+grade_colors <- c("A" = "#00441B", "B" = "#006D2C", "C" = "#41AB5D", "D" = "#A1D99B", "F" = "#C7E9C0")
+qnt3_colors <- c("1" = "#C7E9C0", "2" = "#41AB5D", "3" = "#00441B")
 qnt3_labels <- c("1" = "Low", "2" = "Med", "3" = "High")
-qnt4_colors <- c("1" = "#C6DBEF", "2" = "#6BAED6", "3" = "#2171B5", "4" = "#08306B")
+qnt4_colors <- c("1" = "#C7E9C0", "2" = "#74C476", "3" = "#238B45", "4" = "#00441B")
 map_law_labels <- c("1" = "Reduced", "2" = "Unchanged", "3" = "Small Increase", "4" = "Large Increase")
 map_fsr_labels <- c("1" = "Decrease-Sm Increase", "2" = "Sm-Mod Increase", "3" = "Moderate Increase", "4" = "Large Increase")
 
@@ -166,7 +168,7 @@ gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=
 gg <- gg + coord_map() +
   theme_bw() +
   scale_fill_manual(values = qnt3_colors, labels = qnt3_labels) +
-  # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
+  # scale_fill_continuous(low = "#C7E9C0", high = "#00441B") +
   xlab("") +
   ylab("") +
   labs(fill = "Gun Ownership Level") +
@@ -260,7 +262,7 @@ gg <- gg + geom_map(
 
 gg <- gg + geom_map(data = map_data_df,            ## set data source
                     map = us_map,
-                    aes(fill = as.factor(fsr_chg_qnt),       ## set map variable 
+                    aes(fill = as.factor(fsr_qnt),       ## set map variable 
                         map_id = usps_st))      ## set map label data
 
 gg <- gg + geom_map(
@@ -524,7 +526,7 @@ gg <- gg + geom_text(data=centers, aes(label=id, x=x, y=y), color="white", size=
 
 gg <- gg + coord_map() +
   theme_bw() +
-  scale_fill_manual(values = c("#c6dbef", "#08306b")) +
+  scale_fill_manual(values = c("#C7E9C0", "#00441B")) +
   # scale_fill_continuous(low = "#c6dbef", high = "#08306b") +
   xlab("") +
   ylab("") +
