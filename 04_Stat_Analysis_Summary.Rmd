@@ -908,6 +908,7 @@ state_laws_total_df %>%
   labs(caption = "Boston University School of Public Health: State Gun Law Database") +
   theme(legend.position = "bottom")
 ```
+  
 ##### Median state law counts display absence of broader national change with a few states driving the overall change.  
   
 

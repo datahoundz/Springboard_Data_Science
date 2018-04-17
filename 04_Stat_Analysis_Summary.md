@@ -703,7 +703,9 @@ state_laws_total_df %>%
   theme(legend.position = "bottom")
 ```
 
-![](04_Stat_Analysis_Summary_files/figure-markdown_github/median_law_count_plot-1.png) \#\#\#\#\# Median state law counts display absence of broader national change with a few states driving the overall change.
+![](04_Stat_Analysis_Summary_files/figure-markdown_github/median_law_count_plot-1.png)
+
+##### Median state law counts display absence of broader national change with a few states driving the overall change.
 
 #### Many-Mini Plot of Law Totals by State 1999-2016
 
