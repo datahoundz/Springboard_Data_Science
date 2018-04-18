@@ -24,6 +24,7 @@ library(stringr)
 library(ranger)
 library(vtreat)
 library(xgboost)
+library(magrittr)
 
 # Set options to limit sci notation and decimal places
 options(scipen = 999, digits = 3)
