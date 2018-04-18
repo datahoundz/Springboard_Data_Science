@@ -359,8 +359,24 @@ importance_table %>%
   mutate(gain_cover = Gain * Cover) %>%
   arrange(desc(gain_cover))
 # buyer_reg ranks as top variable validating its selection in manual regression model
-# child_acc variable adds most to its given trees (gain), but covers a much smaller number of trees (cover).
+# child_acc variable adds much to its given trees (gain), but covers a much smaller number of trees (cover).
 # Other variables drop off rapidly in influence, and bkgrnd_chk is surprisingly near the bottom
+
+# Feature         Gain    Cover   Frequency Importance gain*cover
+# 1      buy_reg 0.653139 0.1496   0.11577   0.653139 0.09767944
+# 2  conceal_reg 0.056210 0.1849   0.12500   0.056210 0.01039461
+# 3    high_risk 0.044581 0.1358   0.13842   0.044581 0.00605225
+# 4    child_acc 0.095150 0.0535   0.04279   0.095150 0.00509520
+# 5     poss_reg 0.035706 0.1415   0.10822   0.035706 0.00505406
+# 6     deal_reg 0.045324 0.0689   0.14094   0.045324 0.00312281
+# 7    immunity_ 0.019239 0.0440   0.06208   0.019239 0.00084675
+# 8     pre_empt 0.015184 0.0408   0.03356   0.015184 0.00061974
+# 9    gun_traff 0.019759 0.0287   0.02349   0.019759 0.00056794
+# 10    dom_viol 0.006978 0.0480   0.07550   0.006978 0.00033523
+# 11   stnd_grnd 0.005360 0.0460   0.07131   0.005360 0.00024653
+# 12  bkgrnd_chk 0.002024 0.0248   0.03020   0.002024 0.00005025
+# 13    ammo_reg 0.000710 0.0179   0.02601   0.000710 0.00001270
+# 14 assault_mag 0.000636 0.0155   0.00671   0.000636 0.00000984
 
 xgb.plot.importance(importance_matrix = importance_table)
 
@@ -369,6 +385,31 @@ xgb.plot.importance(importance_matrix = importance_table)
 xgb_manual <- lm(fsr ~ buy_reg * child_acc * conceal_reg, xgb_train)
 summary(xgb_manual)
 
+# Call:
+# lm(formula = fsr ~ buy_reg * child_acc * conceal_reg, data = xgb_train)
+# 
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -4.448 -1.231 -0.265  0.976  8.235 
+# 
+# Coefficients:
+#   Estimate Std. Error t value             Pr(>|t|)    
+# (Intercept)                    10.2481     0.3337   30.71 < 0.0000000000000002 ***
+#   buy_reg                         0.3575     0.2476    1.44              0.14949    
+# child_acc                      -1.1129     0.2220   -5.01           0.00000078 ***
+#   conceal_reg                    -0.2612     0.0892   -2.93              0.00358 ** 
+#   buy_reg:child_acc              -0.1068     0.0556   -1.92              0.05530 .  
+# buy_reg:conceal_reg            -0.1920     0.0507   -3.79              0.00017 ***
+#   child_acc:conceal_reg           0.0899     0.0522    1.72              0.08568 .  
+# buy_reg:child_acc:conceal_reg   0.0332     0.0114    2.91              0.00380 ** 
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 1.88 on 430 degrees of freedom
+# Multiple R-squared:  0.646,	Adjusted R-squared:  0.64 
+# F-statistic:  112 on 7 and 430 DF,  p-value: <0.0000000000000002
+
+
 xgb_test$man_pred <- predict(xgb_manual, xgb_test)
 cor(xgb_test$man_pred, xgb_test$fsr)^2
 sqrt(mean((xgb_test$man_pred - xgb_test$fsr)^2))
@@ -376,5 +417,12 @@ sqrt(mean((xgb_test$man_pred - xgb_test$fsr)^2))
 # Respectable results for utilizing only three law category variables
 # After multiple iterations: buyer_reg and child_acc best, 
 # conceal_reg and pre_empt equivalent third variable
+
+xgb_test %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = man_pred, y = fsr, color = region, label = usps_st)) + 
+  geom_text() + 
+  geom_abline() +
+  expand_limits(y = 0, x = 0)
 
 GainCurvePlot(xgb_test, "man_pred", "fsr", "Gradient Boost Manual Model")
