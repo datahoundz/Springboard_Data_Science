@@ -1,11 +1,5 @@
 # Machine Learning Code
 
-library(stringr)
-library(ranger)
-library(vtreat)
-library(xgboost)
-
-
 # ==================================================================================
 # 
 # Structure a table that includes variables of interest for linear regression model
@@ -37,15 +31,15 @@ mach_data_df <- mach_data_df %>%
          reg_south = reg_code == 3,
          reg_mtn = subreg_code == 8)
 
-# Factor in national suicide rate to adjust for rise since 2008
-nat_suicides <- sui_method_df %>%
-  group_by(year) %>%
-  summarise(nat_pop = sum(pop), nat_sui_all = sum(all_cnt), 
-            nat_rate = nat_sui_all/nat_pop * 100000)
-
-mach_data_df <- mach_data_df %>%
-  left_join(nat_suicides, by = "year") %>%
-  select(-nat_pop, -nat_sui_all)
+# # Factor in national suicide rate to adjust for rise since 2008 --- REMOVED
+# nat_suicides <- sui_method_df %>%
+#   group_by(year) %>%
+#   summarise(nat_pop = sum(pop), nat_sui_all = sum(all_cnt), 
+#             nat_rate = nat_sui_all/nat_pop * 100000)
+# 
+# mach_data_df <- mach_data_df %>%
+#   left_join(nat_suicides, by = "year") %>%
+#   select(-nat_pop, -nat_sui_all)
   
 View(mach_data_df)
 
@@ -55,10 +49,10 @@ View(mach_data_df)
 # 
 # ==================================================================================
 
-# Split into train & test data sets at 50/50 ratio
+# Split into train & test data sets at 70/30 ratio
 # gp <- runif(nrow(mach_data_df))
-# train_df <- mach_data_df[gp < 0.50, ]
-# test_df <- mach_data_df[gp >= 0.50, ]
+# train_df <- mach_data_df[gp < 0.70, ]
+# test_df <- mach_data_df[gp >= 0.70, ]
 # dim(train_df)
 # dim(test_df)
 
@@ -178,10 +172,10 @@ law_cats <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "pos
 outcome <- c("gun_rate")
 var_names <- law_cats
   
-# Split into train & test data sets at 50/50 ratio
+# Split into train & test data sets at 70/30 ratio
 gp <- runif(nrow(rf_data_df))
-rf_train <- rf_data_df[gp < 0.50, ]
-rf_test <- rf_data_df[gp >= 0.50, ]
+rf_train <- rf_data_df[gp < 0.70, ]
+rf_test <- rf_data_df[gp >= 0.70, ]
 dim(rf_train)
 dim(rf_test)
 
@@ -195,12 +189,27 @@ model_rf <- ranger(fml,
                    respect.unordered.factors = "order", 
                    seed = 123)
 model_rf
+ 
+# Ranger result
+# 
+# Call:
+#   ranger(fml, rf_train, num.trees = 500, respect.unordered.factors = "order",      seed = 123) 
+# 
+# Type:                             Regression 
+# Number of trees:                  500 
+# Sample size:                      634 
+# Number of independent variables:  14 
+# Mtry:                             3 
+# Target node size:                 5 
+# Variable importance mode:         none 
+# OOB prediction error (MSE):       0.971 
+# R squared (OOB):                  0.896
 
 rf_test$predict <- predict(model_rf, rf_test)$predictions
 
 cor(rf_test$gun_rate, rf_test$predict)^2
 (rf_rmse <- sqrt(mean((rf_test$predict - rf_test$gun_rate)^2)))
-# r2 of 0.873 and RMSE of 1.09 using gun law category variables only
+# r2 of 0.840 and RMSE of 1.22 using gun law category variables only
 
 ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
   geom_text() + 
@@ -217,10 +226,10 @@ GainCurvePlot(rf_test, "predict", "gun_rate", "Random Forest Law Category Model"
 outcome <- c("gun_rate")
 var_names <- law_vars
 
-# Split into train & test data sets at 50/50 ratio
+# Split into train & test data sets at 70/30 ratio
 gp <- runif(nrow(rf_data_df))
-rf_train <- rf_data_df[gp < 0.50, ]
-rf_test <- rf_data_df[gp >= 0.50, ]
+rf_train <- rf_data_df[gp < 0.70, ]
+rf_test <- rf_data_df[gp >= 0.70, ]
 dim(rf_train)
 dim(rf_test)
 
@@ -236,11 +245,26 @@ model_rf <- ranger(fml,
 # Review model
 model_rf
 
+# Ranger result
+# 
+# Call:
+#   ranger(fml, rf_train, num.trees = 500, respect.unordered.factors = "order",      seed = 123) 
+# 
+# Type:                             Regression 
+# Number of trees:                  500 
+# Sample size:                      656 
+# Number of independent variables:  133 
+# Mtry:                             11 
+# Target node size:                 5 
+# Variable importance mode:         none 
+# OOB prediction error (MSE):       1.18 
+# R squared (OOB):                  0.871 
+
 rf_test$predict <- predict(model_rf, rf_test)$predictions
 
 cor(rf_test$gun_rate, rf_test$predict)^2
 (rf_rmse <- sqrt(mean((rf_test$predict - rf_test$gun_rate)^2)))
-# r2 of 0.863 and RMSE of 1.15 using gun law variables only
+# r2 of 0.895 and RMSE of 1.04 using gun law variables only
 
 ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
   geom_text() + 
@@ -315,7 +339,7 @@ eval_log
 # Determine number of trees to minimize training and test error
 eval_log %>% 
   summarize(ntrees.train = which.min(train_rmse_mean), ntrees.test  = which.min(test_rmse_mean)) 
-# Use 28 trees per evaluation log results (lowest rmse_mean + lowest rmse_std)
+# Use 33 trees per evaluation log results (lowest rmse_mean + lowest rmse_std)
 
 #==============================================================
 # 
@@ -326,7 +350,7 @@ eval_log %>%
 
 gb_model <- xgboost(data = as.matrix(gb_train_treat),
                           label = gb_train$fsr,
-                          nrounds = 28,         # Enter number of trees from above
+                          nrounds = 33,         # Enter number of trees from above
                           objective = "reg:linear",
                           eta = 0.3,
                           depth = 6,
@@ -346,9 +370,9 @@ gb_test %>%
 # Check r2 and RMSE
 cor(gb_test$pred, gb_test$fsr)^2
 sqrt(mean((gb_test$pred - gb_test$fsr)^2))
-# r2 = 0.906, RMSE = 0.947
+# r2 = 0.926, RMSE = 0.870
 
-GainCurvePlot(gb_test, "pred", "fsr", "Gradient Boost Model")
+GainCurvePlot(gb_test, "pred", "fsr", "Gradient Boost Law Category Model")
 
 
 # Model, using only law categories, far outperforms manually created regression model
@@ -361,21 +385,21 @@ importance_table %>%
 # child_acc variable adds much to its given trees (gain), but covers a much smaller number of trees (cover).
 # Other variables drop off rapidly in influence, and bkgrnd_chk is surprisingly near the bottom
 # 
-# Feature      Gain    Cover Frequency    gain_cover
-# 1      buy_reg 0.6331310 0.128988   0.11352 0.08166604302
-# 2    child_acc 0.1199564 0.092441   0.05573 0.01108892526
-# 3  conceal_reg 0.0560467 0.174737   0.13416 0.00979342045
-# 4    high_risk 0.0364547 0.128251   0.14448 0.00467535631
-# 5     poss_reg 0.0313584 0.131531   0.11352 0.00412460752
-# 6     deal_reg 0.0428521 0.071050   0.13622 0.00304463010
-# 7     pre_empt 0.0302948 0.036055   0.02993 0.00109228596
-# 8     dom_viol 0.0104223 0.065736   0.09494 0.00068512147
-# 9    immunity_ 0.0192187 0.034670   0.04954 0.00066631931
-# 10   gun_traff 0.0103027 0.039031   0.01651 0.00040212823
-# 11   stnd_grnd 0.0038283 0.041035   0.05573 0.00015709228
-# 12  bkgrnd_chk 0.0037922 0.040229   0.03612 0.00015255986
-# 13    ammo_reg 0.0023314 0.015990   0.01858 0.00003727811
-# 14 assault_mag 0.0000102 0.000255   0.00103 0.00000000261
+# Feature     Gain   Cover Frequency gain_cover
+# 1    child_acc 0.572511 0.05436    0.0276 0.03112319
+# 2      buy_reg 0.213978 0.13082    0.1210 0.02799149
+# 3  conceal_reg 0.055030 0.16736    0.1735 0.00921010
+# 4     deal_reg 0.048780 0.08691    0.1441 0.00423925
+# 5    high_risk 0.023512 0.14154    0.1183 0.00332789
+# 6     poss_reg 0.013283 0.11930    0.1023 0.00158464
+# 7     pre_empt 0.024190 0.04198    0.0311 0.00101555
+# 8    gun_traff 0.014810 0.03677    0.0374 0.00054456
+# 9     dom_viol 0.011980 0.04418    0.0810 0.00052926
+# 10   immunity_ 0.012171 0.04317    0.0489 0.00052547
+# 11   stnd_grnd 0.005293 0.05829    0.0489 0.00030853
+# 12  bkgrnd_chk 0.001752 0.04610    0.0329 0.00008075
+# 13    ammo_reg 0.002289 0.02099    0.0196 0.00004806
+# 14 assault_mag 0.000421 0.00823    0.0133 0.00000346
 
 xgb.plot.importance(importance_matrix = importance_table)
 
@@ -389,30 +413,30 @@ summary(gb_manual)
 # 
 # Residuals:
 #   Min     1Q Median     3Q    Max 
-# -4.705 -1.057 -0.136  0.931  8.242 
+# -4.478 -1.052 -0.258  0.874  7.282 
 # 
 # Coefficients:
 #   Estimate Std. Error t value             Pr(>|t|)    
-# (Intercept)                   10.12877    0.27016   37.49 < 0.0000000000000002 ***
-#   buy_reg                        0.19206    0.19744    0.97               0.3311    
-# child_acc                     -0.98170    0.16581   -5.92         0.0000000053 ***
-#   conceal_reg                   -0.22373    0.07105   -3.15               0.0017 ** 
-#   buy_reg:child_acc             -0.08174    0.04391   -1.86               0.0631 .  
-# buy_reg:conceal_reg           -0.17031    0.03935   -4.33         0.0000174833 ***
-#   child_acc:conceal_reg          0.06491    0.03911    1.66               0.0975 .  
-# buy_reg:child_acc:conceal_reg  0.02991    0.00878    3.41               0.0007 ***
+# (Intercept)                    9.83817    0.26940   36.52 < 0.0000000000000002 ***
+#   buy_reg                        0.32220    0.19512    1.65              0.09919 .  
+# child_acc                     -1.00129    0.16706   -5.99         0.0000000035 ***
+#   conceal_reg                   -0.16018    0.07196   -2.23              0.02638 *  
+#   buy_reg:child_acc             -0.10113    0.04316   -2.34              0.01943 *  
+#   buy_reg:conceal_reg           -0.19621    0.03937   -4.98         0.0000008097 ***
+#   child_acc:conceal_reg          0.06886    0.03884    1.77              0.07669 .  
+# buy_reg:child_acc:conceal_reg  0.03320    0.00866    3.83              0.00014 ***
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # 
-# Residual standard error: 1.79 on 630 degrees of freedom
-# Multiple R-squared:  0.655,	Adjusted R-squared:  0.652 
-# F-statistic:  171 on 7 and 630 DF,  p-value: <0.0000000000000002
+# Residual standard error: 1.75 on 619 degrees of freedom
+# Multiple R-squared:  0.664,	Adjusted R-squared:  0.66 
+# F-statistic:  175 on 7 and 619 DF,  p-value: <0.0000000000000002
 
 
 gb_test$man_pred <- predict(gb_manual, gb_test)
 cor(gb_test$man_pred, gb_test$fsr)^2
 sqrt(mean((gb_test$man_pred - gb_test$fsr)^2))
-# r2 = 0.635, RMSE = 1.86
+# r2 = 0.619, RMSE = 1.96
 # Respectable results for utilizing only three law category variables
 # After multiple iterations: buyer_reg and child_acc best, 
 # conceal_reg and pre_empt equivalent third variable
@@ -710,9 +734,9 @@ importance_table %>%
   mutate(gain_cover = Gain * Cover) %>%
   arrange(desc(gain_cover))
 
-xgb.plot.importance(importance_matrix = importance_table)
+xgb.plot.importance(importance_matrix = importance_table[1:20, ])
 
-# TOP 20 Variables from ALL Gun Law Gradient Boost
+# TOP 20 Variables from ALL Gun Law Gradient Boost, Sorted by Gain X Cover
 #                     Feature        Gain     Cover Frequency   gain x cover
 # 1                    permith 0.513099722 0.0513600   0.03048 0.026352811759
 # 2           opencarrypermith 0.092291587 0.0338146   0.03165 0.003120803295
@@ -759,4 +783,57 @@ xgb.plot.importance(importance_matrix = importance_table)
 # 8. incidentremoval: State law requires law enforcement to remove firearms from the scene of a domestic violence incident
 # 9. immunity: No law provides blanket immunity to gun manufacturers or prohibits state or local lawsuits against gun manufacturers	
 # 10. elementary: No gun carrying on elementary school property, including concealed weapons permittees	
+
+#==============================================================
 # 
+# Build Manual Regression Model Using Top Law Variables
+# 
+#==============================================================
+
+# Use feedback from above to create manual model w/ critical variables
+gb_critical <- lm(fsr ~ permith * capuses + mayissue + ccrenewbackground + 
+                    opencarrypermith + permitconcealed + recordsdealerh, gb_all_train)
+summary(gb_critical)
+
+# Call:
+#   lm(formula = fsr ~ permith * capuses + mayissue + ccrenewbackground + 
+#        opencarrypermith + permitconcealed + recordsdealerh, data = gb_all_train)
+# 
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -4.920 -0.998 -0.133  1.048  7.085 
+# 
+# Coefficients:
+#   Estimate Std. Error t value             Pr(>|t|)    
+# (Intercept)         12.239      0.294   41.57 < 0.0000000000000002 ***
+#   permith             -2.382      0.291   -8.20   0.0000000000000014 ***
+#   capuses             -2.350      0.238   -9.87 < 0.0000000000000002 ***
+#   mayissue            -1.704      0.212   -8.04   0.0000000000000047 ***
+#   ccrenewbackground   -1.118      0.168   -6.65   0.0000000000637193 ***
+#   opencarrypermith    -0.850      0.172   -4.95   0.0000009510169997 ***
+#   permitconcealed     -1.806      0.302   -5.98   0.0000000038632241 ***
+#   recordsdealerh      -1.120      0.161   -6.93   0.0000000000102967 ***
+#   permith:capuses      1.780      0.376    4.74   0.0000026512115501 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 1.75 on 623 degrees of freedom
+# Multiple R-squared:  0.697,	Adjusted R-squared:  0.693 
+# F-statistic:  179 on 8 and 623 DF,  p-value: <0.0000000000000002
+
+gb_all_test$man_pred <- predict(gb_critical, gb_all_test)
+cor(gb_all_test$man_pred, gb_all_test$fsr)^2
+sqrt(mean((gb_all_test$man_pred - gb_all_test$fsr)^2))
+# r2 = 0.674, RMSE = 1.61
+# Solid results for only seven law variables
+# Ran permith and capuses as interaction per gain/cover profile in importance table
+# Removed bottom three variables from top 10 due to low effect and significance levels
+
+gb_all_test %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = man_pred, y = fsr, color = region, label = usps_st)) + 
+  geom_text() + 
+  geom_abline() +
+  expand_limits(y = 0, x = 0)
+
+GainCurvePlot(gb_test, "man_pred", "fsr", "Gradient Boost TOP 7 Manual Model")
