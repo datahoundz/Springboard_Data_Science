@@ -264,7 +264,6 @@ xgb_data_df <- sui_method_df %>%
   left_join(laws_cat_df, by = join_key) %>%
   filter(year >= 1999)
 
-output <- xgb_data_df$fsr
 var_names <- law_cats
 
 
@@ -318,7 +317,7 @@ eval_log <- as.data.frame(cv$evaluation_log)
 # Determine number of trees to minimize training and test error
 eval_log %>% 
   summarize(ntrees.train = which.min(train_rmse_mean), ntrees.test  = which.min(test_rmse_mean)) 
-# Use 52 trees per evaluation log results
+# Use 34 trees per evaluation log results (lowest rmse_mean + lowest rmse_std)
 
 #==============================================================
 # 
@@ -328,7 +327,7 @@ eval_log %>%
 
 xgb_model <- xgboost(data = as.matrix(xgb_train_treat),
                           label = xgb_train$fsr,
-                          nrounds = 52,
+                          nrounds = 34,
                           objective = "reg:linear",
                           eta = 0.3,
                           depth = 6,
@@ -348,7 +347,9 @@ xgb_test %>%
 # Check r2 and RMSE
 cor(xgb_test$pred, xgb_test$fsr)^2
 sqrt(mean((xgb_test$pred - xgb_test$fsr)^2))
-# r2 = 0.871, RMSE = 1.1
+# r2 = 0.890, RMSE = 0.990
+
+GainCurvePlot(xgb_test, "pred", "fsr", "Gradient Boost Model")
 
 
 # Model, using only law categories, far outperforms manually created regression model
@@ -359,9 +360,21 @@ importance_table %>%
   arrange(desc(gain_cover))
 # buyer_reg ranks as top variable validating its selection in manual regression model
 # child_acc variable adds most to its given trees (gain), but covers a much smaller number of trees (cover).
-# Other variables drop off rapidly in influence, and bkgrnd_chk is surprisingly second to last
+# Other variables drop off rapidly in influence, and bkgrnd_chk is surprisingly near the bottom
 
 xgb.plot.importance(importance_matrix = importance_table)
 
 
+# Use feedback from above to create manual model w/ critical variables
+xgb_manual <- lm(fsr ~ buy_reg * child_acc * conceal_reg, xgb_train)
+summary(xgb_manual)
 
+xgb_test$man_pred <- predict(xgb_manual, xgb_test)
+cor(xgb_test$man_pred, xgb_test$fsr)^2
+sqrt(mean((xgb_test$man_pred - xgb_test$fsr)^2))
+# r2 = 0.652, RMSE = 1.75
+# Respectable results for utilizing only three law category variables
+# After multiple iterations: buyer_reg and child_acc best, 
+# conceal_reg and pre_empt equivalent third variable
+
+GainCurvePlot(xgb_test, "man_pred", "fsr", "Gradient Boost Manual Model")
