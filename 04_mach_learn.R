@@ -99,13 +99,18 @@ anova(mod2)
 # pop_density effect plummeted when combined with other variables
 # lawtotal similar in effect to buy_reg but inlcudes laws unrelated to dependent variable
 
+# Load predicted values into train_df, check r2 and RMSE
+train_df$predict <- predict(mod2, train_df)
+cor(train_df$predict, train_df$gun_rate)^2
+sqrt(mean((train_df$predict - train_df$gun_rate)^2))
+
 
 # Residual & Q-Q Plot code from linear regression exercise
 par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
 plot(mod2, which = c(1, 2)) # "which" argument optional
 
-# Checking outliers - AK-2013, OK-2013, WA-2013
-train_df[c(2, 36, 47), ]
+# Checking outliers
+train_df[c(2, 36, 47), c("year", "state", "predict", "gun_rate", "own_rate", "buy_reg", "reg_west")]
 
 # ==================================================================================
 # 
@@ -121,14 +126,14 @@ anova(test2)
 
 # Load predicted values into test_df, check r2 and RMSE
 test_df$predict <- predict(mod2, test_df)
-(cor(test_df$predict, test_df$gun_rate)^2)
-(test2_rmse <- sqrt(mean((test_df$predict - test_df$gun_rate)^2)))
+cor(test_df$predict, test_df$gun_rate)^2
+sqrt(mean((test_df$predict - test_df$gun_rate)^2))
 
 # Residual & Q-Q Plot
 plot(test2, which = c(1, 2))
 
 # Checking outliers - WY-2012, OK-2016, MT-2015 
-test_df[c(847, 612, 441), ]
+test_df[c(847, 612, 441), c("year", "state", "predict", "gun_rate", "own_rate", "buy_reg", "reg_west")]
 
 # Plot Gain Curve for Model
 GainCurvePlot(test_df, "predict", "gun_rate", "Proxy Ownership Model Results")
