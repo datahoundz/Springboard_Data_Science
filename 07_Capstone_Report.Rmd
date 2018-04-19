@@ -1651,15 +1651,81 @@ State level ownership rates are elusive, and the model will depend on rates for 
 An additional concern is the reliance on geographic region as an independent variable. This variable is also constant over time, meaning that two of the three primary predictive variables are time invariant. This is a significant drawback of the proposed model as the number of gun laws is the only critical independent variable that varies over time. This fact contributed to the consideration of the national overall suicide rate to account for changes over time. However, this approach again ran into the same issues posed by the ownership proxy.  
 
 ### Manual Modelling Technique and Evaluation  
-The predictions will be based upon a multivariate regression model using 70% of the data to train the model and the remaining 30% to test it. Variable selection will be based upon the strength of the multiple r-squared value on the training set with an eye to variables with higher absolute values for coefficients and t-values and high significance levels. Residual plots and Q-Q plots will be created to check for data skewing and outlier values. Evaluation will include calculating the r-squared for the predicted and targeted values along with the RMSE figures for the same. In addition to residual and Q-Q plots, gain plots will be created to further visually display model performance.  
+The predictions will be based upon a multivariate regression model using 2013 data (ownership survey year) to train the model and the remaining data to test it. Variable selection will be based upon the strength of the multiple r-squared value on the training set with an eye to variables with higher absolute values for coefficients and t-values and high significance levels. Residual plots and Q-Q plots will be created to check for data skewing and outlier values. Evaluation will include calculating the r-squared for the predicted and targeted values along with the RMSE figures for the same. In addition to residual and Q-Q plots, gain plots will be created to further visually display model performance.  
 
 ### Random Forest Models  
 One random forest model will be created utilizing only the 14 law categories and another using the 132 specific law variables. Their creation is primarily to determine the degree to which law variables alone can predict a state’s FSR.  
 
 ### Gradient Boost Models  
-Like the random forest approach above, the primary reason for gradient boost modelling is to assess the ability of law variables alone to predict FSR. However, the gradient boost approach allows the chance to view variables in terms of their importance to the model. After assessing variable importance, an effort will be made to manually create a more effective regression model. Model evaluation will be assessed as above.  
+Like the random forest approach above, the primary reason for gradient boost modelling is to assess the ability of law variables alone to predict FSR. However, the gradient boost approach allows the chance to view variables in terms of their importance to the model. After assessing variable importance, an effort will be made to manually create a more effective regression model. Model evaluation will be assessed as above except that the train/test data will be a randomized 70/30 split of the dataset.  
 
 The machine learning R data file is available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R).
 
+```{r ml_setup_code, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# Machine Learning Code
+
+# ==================================================================================
+# 
+# Structure a table that includes variables of interest for linear regression model
+# 
+# ==================================================================================
+
+mach_data_df <- sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(population_df, by = join_key) %>%
+  select(-land_area, -pop.y, -pop.x) %>%
+  left_join(regions_df, by = "state") %>%
+  select(year, state, usps_st, region, subregion, reg_code, subreg_code, gun_rate, other_rate, all_rate, pop_density) %>%
+  left_join(state_laws_total_df, by = join_key) %>%
+  left_join(laws_cat_df, by = join_key) %>%
+  left_join(gun_own_2013_df, by = "state") %>%
+  left_join(gun_own_prx_df, by = join_key) %>%
+  select(-sieg_rnk, -rate_diff, -rnk_diff, -own_rnk) %>%
+  filter(year >= 1999)
+
+# Convert region/subregion to factor for linear regression
+mach_data_df$reg_code <- factor(mach_data_df$reg_code)
+mach_data_df$subreg_code <- factor(mach_data_df$subreg_code)
+
+# Create variable for reg_west T/F per feedback from initial model
+# Deciding to create separate variable for each to test, added MTN to check
+mach_data_df <- mach_data_df %>%
+  mutate(reg_west = reg_code == 4,
+         reg_neast = reg_code == 1,
+         reg_midw = reg_code == 2,
+         reg_south = reg_code == 3,
+         reg_mtn = subreg_code == 8)
+```
+
+### Machine Learning Process 
+
+A data frame, mach_data_df, including _all_ primary variables of interest has been created. Region and subregion variables of interest were converted to individual factor variables.
+```{r str_mach_data_df}
+str(mach_data_df)
+```
+
+### Train & Test Split  
+
+Two methods were considered for dividing the train and test data. It was decided to utilize the 2013 data as the training set since it contained the actual 2013 ownership rate survey results. The alternative 70/30 spit code is left, but commented out, in the event that the 2013 training data decision is reversed.   
+
+```{r initial_test_train_split, echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+# Split into train & test data sets at 70/30 ratio
+# gp <- runif(nrow(mach_data_df))
+# train_df <- mach_data_df[gp < 0.70, ]
+# test_df <- mach_data_df[gp >= 0.70, ]
+# dim(train_df)
+# dim(test_df)
+
+# # Use 2013 as train and balance as test
+train_df <- mach_data_df %>% filter(year == 2013)
+test_df <- mach_data_df %>% filter(year != 2013)
+```
+
+### Review Correlation Table for Colinearity Issues
+
+```{r colinear_chk, echo=TRUE}
+# Run correlation matrix on prospective variables
+train_df[ , 8:ncol(train_df)] %>% cor()
+```
 
 

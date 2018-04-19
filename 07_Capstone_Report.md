@@ -191,9 +191,9 @@ Out of 50 states, 41 Abv Avg Suicide ratings were indicated correctly by Gifford
 
 The map of Giffords Grades presents an almost shocking image of the prevalence of "F" grades across the United States. The South appears distinctly lacking in non-F states. The northern Mountain and Prairie states represent another pocket of light regulation. Grades of A and B are concentrated in the Northeast and West coast. ![](07_Capstone_Report_files/figure-markdown_github/giff_grd_map-1.png)
 
-### Overall Suicide Map Discloses Areas of Inversion
+### Overall Suicide Map Discloses Flipped Regional Images
 
-The New England/Mid-Atlantic region and the Northern Mountain/Plains exhibit a near mirror image of the Giffords Grade map. On the other hand, the South and Pacific Northwest evade the direct relationship. ![](07_Capstone_Report_files/figure-markdown_github/giff_osr_mp-1.png)
+The New England/Mid-Atlantic region and the Northern Mountain/Plains exhibit a flipped mirror image of the Giffords Grade map. On the other hand, the South and Pacific Northwest evade the direct relationship. ![](07_Capstone_Report_files/figure-markdown_github/giff_osr_mp-1.png)
 
 Strong Firearm Legislation, Lower Firearm Suicides
 --------------------------------------------------
@@ -266,7 +266,7 @@ An additional concern is the reliance on geographic region as an independent var
 
 ### Manual Modelling Technique and Evaluation
 
-The predictions will be based upon a multivariate regression model using 70% of the data to train the model and the remaining 30% to test it. Variable selection will be based upon the strength of the multiple r-squared value on the training set with an eye to variables with higher absolute values for coefficients and t-values and high significance levels. Residual plots and Q-Q plots will be created to check for data skewing and outlier values. Evaluation will include calculating the r-squared for the predicted and targeted values along with the RMSE figures for the same. In addition to residual and Q-Q plots, gain plots will be created to further visually display model performance.
+The predictions will be based upon a multivariate regression model using 2013 data (ownership survey year) to train the model and the remaining data to test it. Variable selection will be based upon the strength of the multiple r-squared value on the training set with an eye to variables with higher absolute values for coefficients and t-values and high significance levels. Residual plots and Q-Q plots will be created to check for data skewing and outlier values. Evaluation will include calculating the r-squared for the predicted and targeted values along with the RMSE figures for the same. In addition to residual and Q-Q plots, gain plots will be created to further visually display model performance.
 
 ### Random Forest Models
 
@@ -274,6 +274,211 @@ One random forest model will be created utilizing only the 14 law categories and
 
 ### Gradient Boost Models
 
-Like the random forest approach above, the primary reason for gradient boost modelling is to assess the ability of law variables alone to predict FSR. However, the gradient boost approach allows the chance to view variables in terms of their importance to the model. After assessing variable importance, an effort will be made to manually create a more effective regression model. Model evaluation will be assessed as above.
+Like the random forest approach above, the primary reason for gradient boost modelling is to assess the ability of law variables alone to predict FSR. However, the gradient boost approach allows the chance to view variables in terms of their importance to the model. After assessing variable importance, an effort will be made to manually create a more effective regression model. Model evaluation will be assessed as above except that the train/test data will be a randomized 70/30 split of the dataset.
 
 The machine learning R data file is available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R).
+
+### Machine Learning Process
+
+A data frame, mach\_data\_df, including *all* primary variables of interest has been created. Region and subregion variables of interest were converted to individual factor variables.
+
+    ## Classes 'tbl_df', 'tbl' and 'data.frame':    900 obs. of  34 variables:
+    ##  $ year       : int  1999 2000 2001 2002 2003 2004 2005 2006 2007 2008 ...
+    ##  $ state      : chr  "Alabama" "Alabama" "Alabama" "Alabama" ...
+    ##  $ usps_st    : chr  "AL" "AL" "AL" "AL" ...
+    ##  $ region     : chr  "3-South" "3-South" "3-South" "3-South" ...
+    ##  $ subregion  : chr  "6-South Central East" "6-South Central East" "6-South Central East" "6-South Central East" ...
+    ##  $ reg_code   : Factor w/ 4 levels "1","2","3","4": 3 3 3 3 3 3 3 3 3 3 ...
+    ##  $ subreg_code: Factor w/ 9 levels "1","2","3","4",..: 6 6 6 6 6 6 6 6 6 6 ...
+    ##  $ gun_rate   : num  9.8 9.6 8.7 8.5 8.9 8.3 8.1 8.6 8.5 9 ...
+    ##  $ other_rate : num  2.7 3.5 2.8 3 2.6 3.7 3.6 3.9 4.2 3.8 ...
+    ##  $ all_rate   : num  12.5 13.1 11.5 11.5 11.5 12 11.7 12.5 12.7 12.8 ...
+    ##  $ pop_density: num  87.5 87.9 88.2 88.5 88.9 ...
+    ##  $ lawtotal   : int  16 11 11 11 11 11 11 11 11 11 ...
+    ##  $ deal_reg   : int  6 5 5 5 5 5 5 5 5 5 ...
+    ##  $ buy_reg    : int  1 0 0 0 0 0 0 0 0 0 ...
+    ##  $ high_risk  : int  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ bkgrnd_chk : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ ammo_reg   : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ poss_reg   : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ conceal_reg: int  3 3 3 3 3 3 3 4 4 4 ...
+    ##  $ assault_mag: int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ child_acc  : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ gun_traff  : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ stnd_grnd  : int  1 1 1 1 1 1 1 0 0 0 ...
+    ##  $ pre_empt   : int  1 0 0 0 0 0 0 0 0 0 ...
+    ##  $ immunity_  : int  1 0 0 0 0 0 0 0 0 0 ...
+    ##  $ dom_viol   : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ own_rate   : num  0.489 0.489 0.489 0.489 0.489 0.489 0.489 0.489 0.489 0.489 ...
+    ##  $ siegel_rate: num  0.497 0.497 0.497 0.497 0.497 0.497 0.497 0.497 0.497 0.497 ...
+    ##  $ own_proxy  : num  0.51 0.477 0.493 0.483 0.496 ...
+    ##  $ reg_west   : logi  FALSE FALSE FALSE FALSE FALSE FALSE ...
+    ##  $ reg_neast  : logi  FALSE FALSE FALSE FALSE FALSE FALSE ...
+    ##  $ reg_midw   : logi  FALSE FALSE FALSE FALSE FALSE FALSE ...
+    ##  $ reg_south  : logi  TRUE TRUE TRUE TRUE TRUE TRUE ...
+    ##  $ reg_mtn    : logi  FALSE FALSE FALSE FALSE FALSE FALSE ...
+
+### Train & Test Split
+
+Two methods were considered for dividing the train and test data. It was decided to utilize the 2013 data as the training set since it contained the actual 2013 ownership rate survey results. The alternative 70/30 spit code is left, but commented out, in the event that the 2013 training data decision is reversed.
+
+``` r
+# Split into train & test data sets at 70/30 ratio
+# gp <- runif(nrow(mach_data_df))
+# train_df <- mach_data_df[gp < 0.70, ]
+# test_df <- mach_data_df[gp >= 0.70, ]
+# dim(train_df)
+# dim(test_df)
+
+# # Use 2013 as train and balance as test
+train_df <- mach_data_df %>% filter(year == 2013)
+test_df <- mach_data_df %>% filter(year != 2013)
+```
+
+### Review Correlation Table for Colinearity Issues
+
+``` r
+# Run correlation matrix on prospective variables
+train_df[ , 8:ncol(train_df)] %>% cor()
+```
+
+    ##             gun_rate other_rate all_rate pop_density lawtotal deal_reg
+    ## gun_rate      1.0000     0.0343    0.906     -0.7006  -0.7864 -0.67778
+    ## other_rate    0.0343     1.0000    0.455     -0.0468   0.0304  0.03357
+    ## all_rate      0.9057     0.4547    1.000     -0.6442  -0.6879 -0.58978
+    ## pop_density  -0.7006    -0.0468   -0.644      1.0000   0.6904  0.68322
+    ## lawtotal     -0.7864     0.0304   -0.688      0.6904   1.0000  0.88168
+    ## deal_reg     -0.6778     0.0336   -0.590      0.6832   0.8817  1.00000
+    ## buy_reg      -0.7616     0.1029   -0.635      0.7129   0.8917  0.78031
+    ## high_risk    -0.5927     0.0769   -0.496      0.4698   0.7767  0.65121
+    ## bkgrnd_chk   -0.6577     0.1475   -0.524      0.6044   0.8424  0.76790
+    ## ammo_reg     -0.6242    -0.0104   -0.561      0.6682   0.8645  0.78466
+    ## poss_reg     -0.5587    -0.1382   -0.556      0.5918   0.6833  0.51261
+    ## conceal_reg  -0.5257    -0.1830   -0.546      0.3195   0.5737  0.39320
+    ## assault_mag  -0.5648    -0.1031   -0.547      0.5907   0.7781  0.66461
+    ## child_acc    -0.7163    -0.0360   -0.654      0.6767   0.8484  0.75814
+    ## gun_traff    -0.4869    -0.0168   -0.441      0.4341   0.7068  0.61313
+    ## stnd_grnd    -0.3795     0.2699   -0.224      0.2956   0.4545  0.31667
+    ## pre_empt     -0.6733     0.0410   -0.583      0.5700   0.8138  0.67435
+    ## immunity_    -0.5114     0.1939   -0.373      0.4147   0.6312  0.48706
+    ## dom_viol     -0.6095     0.0860   -0.507      0.3900   0.8154  0.69513
+    ## own_rate      0.7479    -0.0526    0.644     -0.6238  -0.4997 -0.46208
+    ## siegel_rate   0.8953    -0.1294    0.743     -0.7230  -0.7787 -0.68013
+    ## own_proxy     0.8799    -0.1939    0.702     -0.7116  -0.7851 -0.68705
+    ## reg_west      0.3601     0.5651    0.561     -0.3045  -0.0311  0.00422
+    ## reg_neast    -0.4461     0.1710   -0.325      0.5984   0.3995  0.47827
+    ## reg_midw     -0.1245    -0.0141   -0.117     -0.1983  -0.1212 -0.23462
+    ## reg_south     0.1428    -0.6593   -0.152     -0.0250  -0.1888 -0.18306
+    ## reg_mtn       0.4562     0.5032    0.620     -0.2851  -0.2521 -0.28217
+    ##             buy_reg high_risk bkgrnd_chk ammo_reg poss_reg conceal_reg
+    ## gun_rate    -0.7616   -0.5927     -0.658  -0.6242  -0.5587     -0.5257
+    ## other_rate   0.1029    0.0769      0.147  -0.0104  -0.1382     -0.1830
+    ## all_rate    -0.6351   -0.4956     -0.524  -0.5607  -0.5565     -0.5461
+    ## pop_density  0.7129    0.4698      0.604   0.6682   0.5918      0.3195
+    ## lawtotal     0.8917    0.7767      0.842   0.8645   0.6833      0.5737
+    ## deal_reg     0.7803    0.6512      0.768   0.7847   0.5126      0.3932
+    ## buy_reg      1.0000    0.6900      0.737   0.7275   0.5809      0.5083
+    ## high_risk    0.6900    1.0000      0.589   0.6427   0.4163      0.5032
+    ## bkgrnd_chk   0.7374    0.5890      1.000   0.6935   0.4320      0.4377
+    ## ammo_reg     0.7275    0.6427      0.693   1.0000   0.6272      0.3790
+    ## poss_reg     0.5809    0.4163      0.432   0.6272   1.0000      0.4165
+    ## conceal_reg  0.5083    0.5032      0.438   0.3790   0.4165      1.0000
+    ## assault_mag  0.6181    0.5638      0.634   0.7360   0.5315      0.4097
+    ## child_acc    0.7614    0.5720      0.632   0.7674   0.6091      0.3955
+    ## gun_traff    0.4958    0.5062      0.606   0.6948   0.4478      0.3275
+    ## stnd_grnd    0.4217    0.4612      0.447   0.3674   0.1805      0.2878
+    ## pre_empt     0.7779    0.5810      0.593   0.6780   0.6677      0.4838
+    ## immunity_    0.6601    0.4784      0.537   0.5466   0.4321      0.3092
+    ## dom_viol     0.6961    0.6661      0.612   0.6510   0.5527      0.5205
+    ## own_rate    -0.4351   -0.3594     -0.572  -0.4057  -0.2404     -0.1897
+    ## siegel_rate -0.7635   -0.6207     -0.688  -0.6318  -0.5793     -0.5039
+    ## own_proxy   -0.7626   -0.5964     -0.693  -0.6510  -0.5895     -0.4579
+    ## reg_west    -0.0377   -0.0329      0.038  -0.0784  -0.1333     -0.0781
+    ## reg_neast    0.3751    0.2627      0.374   0.3992   0.2467     -0.1255
+    ## reg_midw    -0.0747   -0.0326     -0.134  -0.1243  -0.1447      0.1335
+    ## reg_south   -0.2051   -0.1556     -0.221  -0.1413   0.0548      0.0546
+    ## reg_mtn     -0.2859   -0.2537     -0.141  -0.1893  -0.1545     -0.1721
+    ##             assault_mag child_acc gun_traff stnd_grnd pre_empt immunity_
+    ## gun_rate        -0.5648   -0.7163   -0.4869   -0.3795 -0.67332   -0.5114
+    ## other_rate      -0.1031   -0.0360   -0.0168    0.2699  0.04099    0.1939
+    ## all_rate        -0.5470   -0.6536   -0.4411   -0.2238 -0.58266   -0.3735
+    ## pop_density      0.5907    0.6767    0.4341    0.2956  0.57000    0.4147
+    ## lawtotal         0.7781    0.8484    0.7068    0.4545  0.81379    0.6312
+    ## deal_reg         0.6646    0.7581    0.6131    0.3167  0.67435    0.4871
+    ## buy_reg          0.6181    0.7614    0.4958    0.4217  0.77790    0.6601
+    ## high_risk        0.5638    0.5720    0.5062    0.4612  0.58102    0.4784
+    ## bkgrnd_chk       0.6344    0.6322    0.6064    0.4473  0.59252    0.5366
+    ## ammo_reg         0.7360    0.7674    0.6948    0.3674  0.67797    0.5466
+    ## poss_reg         0.5315    0.6091    0.4478    0.1805  0.66768    0.4321
+    ## conceal_reg      0.4097    0.3955    0.3275    0.2878  0.48376    0.3092
+    ## assault_mag      1.0000    0.6168    0.6593    0.3401  0.73932    0.4924
+    ## child_acc        0.6168    1.0000    0.6433    0.3325  0.59822    0.5496
+    ## gun_traff        0.6593    0.6433    1.0000    0.3686  0.49715    0.3039
+    ## stnd_grnd        0.3401    0.3325    0.3686    1.0000  0.38490    0.6624
+    ## pre_empt         0.7393    0.5982    0.4972    0.3849  1.00000    0.5810
+    ## immunity_        0.4924    0.5496    0.3039    0.6624  0.58103    1.0000
+    ## dom_viol         0.5127    0.6518    0.4973    0.3217  0.68433    0.4640
+    ## own_rate        -0.4463   -0.4603   -0.4140   -0.3060 -0.37060   -0.3144
+    ## siegel_rate     -0.5113   -0.6858   -0.4957   -0.3566 -0.63397   -0.4557
+    ## own_proxy       -0.5447   -0.6774   -0.4892   -0.3737 -0.66166   -0.4947
+    ## reg_west        -0.0368   -0.1273    0.0132    0.0897 -0.00951    0.0558
+    ## reg_neast        0.4495    0.3424    0.1727    0.2235  0.45590    0.3231
+    ## reg_midw        -0.2071   -0.1015   -0.0673    0.1428 -0.08788    0.0909
+    ## reg_south       -0.1460   -0.0694   -0.0930   -0.3992 -0.28608   -0.4019
+    ## reg_mtn         -0.1337   -0.2731   -0.0800   -0.0350 -0.18201   -0.0829
+    ##             dom_viol own_rate siegel_rate own_proxy reg_west reg_neast
+    ## gun_rate     -0.6095   0.7479     0.89532    0.8799  0.36008    -0.446
+    ## other_rate    0.0860  -0.0526    -0.12938   -0.1939  0.56515     0.171
+    ## all_rate     -0.5067   0.6442     0.74302    0.7020  0.56059    -0.325
+    ## pop_density   0.3900  -0.6238    -0.72305   -0.7116 -0.30448     0.598
+    ## lawtotal      0.8154  -0.4997    -0.77873   -0.7851 -0.03114     0.400
+    ## deal_reg      0.6951  -0.4621    -0.68013   -0.6871  0.00422     0.478
+    ## buy_reg       0.6961  -0.4351    -0.76353   -0.7626 -0.03766     0.375
+    ## high_risk     0.6661  -0.3594    -0.62074   -0.5964 -0.03287     0.263
+    ## bkgrnd_chk    0.6123  -0.5721    -0.68808   -0.6931  0.03800     0.374
+    ## ammo_reg      0.6510  -0.4057    -0.63179   -0.6510 -0.07845     0.399
+    ## poss_reg      0.5527  -0.2404    -0.57926   -0.5895 -0.13334     0.247
+    ## conceal_reg   0.5205  -0.1897    -0.50392   -0.4579 -0.07813    -0.126
+    ## assault_mag   0.5127  -0.4463    -0.51126   -0.5447 -0.03678     0.450
+    ## child_acc     0.6518  -0.4603    -0.68579   -0.6774 -0.12733     0.342
+    ## gun_traff     0.4973  -0.4140    -0.49568   -0.4892  0.01324     0.173
+    ## stnd_grnd     0.3217  -0.3060    -0.35660   -0.3737  0.08966     0.224
+    ## pre_empt      0.6843  -0.3706    -0.63397   -0.6617 -0.00951     0.456
+    ## immunity_     0.4640  -0.3144    -0.45569   -0.4947  0.05583     0.323
+    ## dom_viol      1.0000  -0.2938    -0.58540   -0.6030  0.05797     0.217
+    ## own_rate     -0.2938   1.0000     0.70840    0.6968  0.33997    -0.537
+    ## siegel_rate  -0.5854   0.7084     1.00000    0.9756  0.14616    -0.414
+    ## own_proxy    -0.6030   0.6968     0.97556    1.0000  0.04867    -0.454
+    ## reg_west      0.0580   0.3400     0.14616    0.0487  1.00000    -0.278
+    ## reg_neast     0.2173  -0.5374    -0.41352   -0.4536 -0.27772     1.000
+    ## reg_midw     -0.0279  -0.0752     0.00952    0.1099 -0.33310    -0.263
+    ## reg_south    -0.2080   0.1918     0.19442    0.2272 -0.40662    -0.321
+    ## reg_mtn      -0.1692   0.3427     0.31194    0.2066  0.73629    -0.204
+    ##             reg_midw reg_south reg_mtn
+    ## gun_rate    -0.12448    0.1428  0.4562
+    ## other_rate  -0.01411   -0.6593  0.5032
+    ## all_rate    -0.11691   -0.1524  0.6199
+    ## pop_density -0.19835   -0.0250 -0.2851
+    ## lawtotal    -0.12122   -0.1888 -0.2521
+    ## deal_reg    -0.23462   -0.1831 -0.2822
+    ## buy_reg     -0.07468   -0.2051 -0.2859
+    ## high_risk   -0.03262   -0.1556 -0.2537
+    ## bkgrnd_chk  -0.13388   -0.2213 -0.1408
+    ## ammo_reg    -0.12427   -0.1413 -0.1893
+    ## poss_reg    -0.14475    0.0548 -0.1545
+    ## conceal_reg  0.13350    0.0546 -0.1721
+    ## assault_mag -0.20709   -0.1460 -0.1337
+    ## child_acc   -0.10148   -0.0694 -0.2731
+    ## gun_traff   -0.06728   -0.0930 -0.0800
+    ## stnd_grnd    0.14282   -0.3992 -0.0350
+    ## pre_empt    -0.08788   -0.2861 -0.1820
+    ## immunity_    0.09095   -0.4019 -0.0829
+    ## dom_viol    -0.02787   -0.2080 -0.1692
+    ## own_rate    -0.07516    0.1918  0.3427
+    ## siegel_rate  0.00952    0.1944  0.3119
+    ## own_proxy    0.10990    0.2272  0.2066
+    ## reg_west    -0.33310   -0.4066  0.7363
+    ## reg_neast   -0.26329   -0.3214 -0.2045
+    ## reg_midw     1.00000   -0.3855 -0.2453
+    ## reg_south   -0.38550    1.0000 -0.2994
+    ## reg_mtn     -0.24526   -0.2994  1.0000
