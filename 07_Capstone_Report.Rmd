@@ -1426,8 +1426,8 @@ The map of Giffords Grades presents an almost shocking image of the prevalence o
 mp_giff_grd
 ```
   
-### Overall Suicide Map Discloses Areas of Inversion  
-The New England/Mid-Atlantic region and the Northern Mountain/Plains exhibit a near mirror image of the Giffords Grade map. On the other hand, the South and Pacific Northwest evade the direct relationship.
+### Overall Suicide Map Discloses Flipped Regional Images  
+The New England/Mid-Atlantic region and the Northern Mountain/Plains exhibit a flipped mirror image of the Giffords Grade map. On the other hand, the South and Pacific Northwest evade the direct relationship.
 ```{r giff_osr_mp}
 mp_all_rate
 ```
@@ -1598,7 +1598,7 @@ fsr_chg_df %>%
   
 ### Select State Comparisons  
   
-By way of comparison, Missouri eliminated a net of 10 gun laws and saw its FSR rise by 3.0 per 100,000. California implemented 33 new gun laws and saw its FSR drop by 0.5 per 100,000. Adjusting for population, Missouri saw an estimated 176 more suicides in 2016 while California saved an estimated 183 lives. The equivalent numbers for New York and South Carolina are 39 lives saved and 151 additional suicides repsectively.  
+By way of comparison, Missouri eliminated a net of 10 gun laws and saw its FSR rise by 3.0 per 100,000. California implemented 33 new gun laws and saw its FSR drop by 0.5 per 100,000. Adjusting for population, Missouri saw an estimated 176 more suicides in 2016 while California saved an estimated 183 lives. The equivalent numbers for New York and South Carolina are 39 lives saved and 151 additional deaths respectively.  
   
 
 ```{r ca_mo_plot}
@@ -1634,3 +1634,32 @@ During the machine learning phase of the project, an effort will be made to focu
 The goal of this analysis is to explore firearm suicide; however, preliminary findings suggest that many of the candidate variables are reasonably strong predictors of overall suicide levels as well. This is to be expected as the FSR represents around half of the overall suicide rate. But it would be interesting to explore how specific classes of gun legislation or other actions might effectively reduce the overall rate, especially in states with disproprtionately high FSR levels.  
   
 Another area of interest raised is the disparity between suicide rates in the Mountain and Great Plains subregions, both of which are characterized by similarly low population densities. Additionally sharp differences between neighboring states, Indiana and Illinois for example, present opportunities for more focused investigation of states with similar population profiles. 
+
+
+## Machine Learning Plan  
+  
+### The Machine Learning Problem  
+This research seeks to identify factors that might addressed to reduce firearm suicide rates. Consequently, the machine learning problem is to discover the variables that most effectively predict a state’s firearm suicide rate (FSR). This question lends itself very naturally to a supervised multivariate regression approach.  
+
+### Critical Features of the Model  
+The state level firearm suicide rate is the targeted dependent value. Initial statistical analysis suggests candidates for significant independent variables. These include the state level firearm ownership rates, the number of state level gun control laws – both overall total and counts for specific law categories, census geographic regions and state population density. Additionally, a single national level overall suicide rate for each year will be considered to account for the steady rise in suicide rates, particularly since 2008.  
+
+### Gun Ownership Rate Concerns  
+State level ownership rates are elusive, and the model will depend on rates for 2013 only. This means the model will not account for shifts in ownership rates over the 18-year analysis period. The reliability of the state level gun ownership data presents a second concern. Additional research uncovered another set of 30-year average proxy ownership rates that varies significantly from the modeled data. The annual proxy ownership rates underlying these averages were kindly provided by Dr. Michael Siegel at the Boston University School of Public Health. Unfortunately, this proxy is largely derived from firearm and overall suicide figures. The first is the dependent variable of interest, and the second is made up in part by the first and thus overlapping and highly correlated.  
+
+### Time Sensitivity Issues  
+An additional concern is the reliance on geographic region as an independent variable. This variable is also constant over time, meaning that two of the three primary predictive variables are time invariant. This is a significant drawback of the proposed model as the number of gun laws is the only critical independent variable that varies over time. This fact contributed to the consideration of the national overall suicide rate to account for changes over time. However, this approach again ran into the same issues posed by the ownership proxy.  
+
+### Manual Modelling Technique and Evaluation  
+The predictions will be based upon a multivariate regression model using 70% of the data to train the model and the remaining 30% to test it. Variable selection will be based upon the strength of the multiple r-squared value on the training set with an eye to variables with higher absolute values for coefficients and t-values and high significance levels. Residual plots and Q-Q plots will be created to check for data skewing and outlier values. Evaluation will include calculating the r-squared for the predicted and targeted values along with the RMSE figures for the same. In addition to residual and Q-Q plots, gain plots will be created to further visually display model performance.  
+
+### Random Forest Models  
+One random forest model will be created utilizing only the 14 law categories and another using the 132 specific law variables. Their creation is primarily to determine the degree to which law variables alone can predict a state’s FSR.  
+
+### Gradient Boost Models  
+Like the random forest approach above, the primary reason for gradient boost modelling is to assess the ability of law variables alone to predict FSR. However, the gradient boost approach allows the chance to view variables in terms of their importance to the model. After assessing variable importance, an effort will be made to manually create a more effective regression model. Model evaluation will be assessed as above.  
+
+The machine learning R data file is available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R).
+
+
+
