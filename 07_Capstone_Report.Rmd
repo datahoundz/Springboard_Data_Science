@@ -14,9 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r data_setup, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-
-
+```{r load_library, warning=TRUE, include=FALSE}
 # Project Setup - Package Library Load
 
 library(xml2)
@@ -47,6 +45,9 @@ library(magrittr)
 
 # Set options to limit sci notation and decimal places
 options(scipen = 999, digits = 3)
+```
+
+```{r data_setup, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 
 # =======================================================================
 # 
@@ -351,6 +352,8 @@ gun_ammo_df <- read.csv("data_edited/guns_ammo_rankings.csv")
 ```
 
 ```{r map_code, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+
+# Mapping code from other git hub user, not my work. Modified to display project data.
 # get map from 
 download.file("https://gist.githubusercontent.com/hrbrmstr/51f961198f65509ad863/raw/219173f69979f663aa9192fbe3e115ebd357ca9f/us_states_hexgrid.geojson", "us_states_hexgrid.geojson")
 us <- readOGR("us_states_hexgrid.geojson")
@@ -1709,6 +1712,7 @@ str(mach_data_df)
 Two methods were considered for dividing the train and test data. It was decided to utilize the 2013 data as the training set since it contained the actual 2013 ownership rate survey results. The alternative 70/30 spit code is left, but commented out, in the event that the 2013 training data decision is reversed.   
 
 ```{r initial_test_train_split, echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+
 # Split into train & test data sets at 70/30 ratio
 # gp <- runif(nrow(mach_data_df))
 # train_df <- mach_data_df[gp < 0.70, ]
@@ -1723,9 +1727,67 @@ test_df <- mach_data_df %>% filter(year != 2013)
 
 ### Review Correlation Table for Colinearity Issues
 
-```{r colinear_chk, echo=TRUE}
+Run correlation matrix on prospective variables.  
+  *train_df[ , 8:ncol(train_df)] %>% cor()*
+
+The extensive correlation matrix (too large too display) revealed several areas of high colinearity which were taken into account in the variable selection for the model.  Then a simplified table of correlations with the target variable of gun_rate (FSR) was created to determine candidate variables for model selection.
+
+```{r colinear_chk, include=FALSE}
 # Run correlation matrix on prospective variables
 train_df[ , 8:ncol(train_df)] %>% cor()
 ```
 
+```{r variable_selection, paged.print=TRUE}
+# Arrange variables by prospective correlation w/ gun_rate
+cor_df <- train_df[ , 8:ncol(train_df)] %>% cor()
+cor_df <- as.data.frame(as.table(cor_df))
+cor_df %>%
+  filter(Var2 == "gun_rate") %>%
+  arrange(desc(abs(Freq)))
+```
+  
+### Variable Selection Process  
+A review of the above table showed the high correlation levels for overall suicide (all_rate) as well as the siegel_rate and own_proxy each of which include the target variable within their derivation. While total laws (lawtotal) had a higher correlation than buyer regulations (buy_reg), the latter was selected as a more narrow and conservative option. Ownership rate (own_rate) was a clear variable choice from the outset as was population density (pop_density).  
+
+Among other law category variables, child access laws (child_acc), dealer regulations (deal_reg), preemption laws (pre_empt), background checks (bkgrnd_chk), domestic violence (dom_viol) and high-risk (high_risk) were all selected for consideration in the regression model. High colinearity between several of the law category variables posed issues in model development and was taken into account. All region variables were considered as well, both alone and in combination with other variables.  
+
+### Selected Variables  
+__The most effective variables in combination were ownership rate, buyer regulations and region West.__ Several promising variables like population density and the regional variables for Mountain and Northeast performed well individually but failed to increase model performance significantly in combination with other independent variables.   
+
+### Model Performance on Training Data  
+The model predicted 82.5% of the variation in the firearm suicide rate on the training data for 2013. Ownership rates have the largest effect but are also subject to a higher standard error. Buyer regulations contribute signifcantly to model accuracy with values of this variable ranging only from 0 to 15. The addition of region West added 3.0 percentage points to prediction accuracy. This modest increase exceeded that of any other region or combination of regions while also maitaining an acceptable signicance level. 
+
+```{r base_train_model}
+# Design, test and run multi-variate linear model
+mod2 <- lm(gun_rate ~ own_rate + buy_reg + reg_west, train_df)
+
+# Check results
+summary(mod2)
+confint(mod2)
+
+```
+  
+### Plug Prediction Back Into Train Data and Check r2 and RMSE  
+
+```{r base_train_r2_rmse}
+# Load predicted values into train_df, check r2 and RMSE
+train_df$predict <- predict(mod2, train_df)
+cor(train_df$predict, train_df$gun_rate)^2
+sqrt(mean((train_df$predict - train_df$gun_rate)^2))
+```
+
+### Check Model Residuals and Q-Q Plots  
+
+```{r base_train_resid_qq}
+# Residual & Q-Q Plot code from linear regression exercise
+par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
+plot(mod2, which = c(1, 2)) # "which" argument optional
+```
+
+### Check Outliers  
+
+```{r base_train_outliers}
+# Checking outliers
+train_df[c(2, 36, 47), c("year", "state", "predict", "gun_rate", "own_rate", "buy_reg", "reg_west")]
+```
 
