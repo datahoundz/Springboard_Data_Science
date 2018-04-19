@@ -1700,7 +1700,7 @@ mach_data_df <- mach_data_df %>%
          reg_mtn = subreg_code == 8)
 ```
 
-### Machine Learning Process 
+## Machine Learning Process 
 
 A data frame, mach_data_df, including _all_ primary variables of interest has been created. Region and subregion variables of interest were converted to individual factor variables.
 ```{r str_mach_data_df}
@@ -1755,7 +1755,7 @@ Among other law category variables, child access laws (child_acc), dealer regula
 __The most effective variables in combination were ownership rate, buyer regulations and region West.__ Several promising variables like population density and the regional variables for Mountain and Northeast performed well individually but failed to increase model performance significantly in combination with other independent variables.   
 
 ### Model Performance on Training Data  
-The model predicted 82.5% of the variation in the firearm suicide rate on the training data for 2013. Ownership rates have the largest effect but are also subject to a higher standard error. Buyer regulations contribute signifcantly to model accuracy with values of this variable ranging only from 0 to 15. The addition of region West added 3.0 percentage points to prediction accuracy. This modest increase exceeded that of any other region or combination of regions while also maitaining an acceptable signicance level. 
+__The model accounted for 82.5% of the variation in the firearm suicide rate on the training data for 2013.__ Ownership rates have the largest effect but are also subject to a higher standard error. Buyer regulations contribute signifcantly to model accuracy with values of this variable ranging only from 0 to 15. The addition of region West added 3.0 percentage points to prediction accuracy. This modest increase exceeded that of any other region or combination of regions while also maitaining an acceptable signicance level. 
 
 ```{r base_train_model}
 # Design, test and run multi-variate linear model
@@ -1767,7 +1767,8 @@ confint(mod2)
 
 ```
   
-### Plug Prediction Back Into Train Data and Check r2 and RMSE  
+### Plug Prediction Back Into TRAIN Data and Check r2 and RMSE  
+Testing predictions against observed values confirms the 0.825 r-squared value, with an RMSE of 1.38.
 
 ```{r base_train_r2_rmse}
 # Load predicted values into train_df, check r2 and RMSE
@@ -1776,18 +1777,55 @@ cor(train_df$predict, train_df$gun_rate)^2
 sqrt(mean((train_df$predict - train_df$gun_rate)^2))
 ```
 
-### Check Model Residuals and Q-Q Plots  
-
+### Check Model Residuals vs Fitted and Q-Q Plots  
+The residual and Q-Q plots indicate reasonable distribution of model error, although the data starts to skew above expected levels at higher values.
 ```{r base_train_resid_qq}
 # Residual & Q-Q Plot code from linear regression exercise
-par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) #optional
-plot(mod2, which = c(1, 2)) # "which" argument optional
+par(mar = c(4, 4, 2, 2), mfrow = c(1, 2))
+plot(mod2, which = c(1, 2))
 ```
 
-### Check Outliers  
+### Check Identified Outliers  
 
 ```{r base_train_outliers}
 # Checking outliers
 train_df[c(2, 36, 47), c("year", "state", "predict", "gun_rate", "own_rate", "buy_reg", "reg_west")]
+```
+
+## Apply Regression Model to Test Data  
+
+### Model Performance on Test Data  
+Model performance declined from the initial training data, but this was largely expected given the significant size discrepancy between the training set and the test set. __The model accounted for 77.3% of the variation in the test data set.__ The coefficient estimate for the ownership rate dropped but so did the standard error and the t-value, a likely result of the larger data set. The impact of region West increased as did its level of significance. The confidence interval table reflects a much tighter range of values.  
+
+```{r base_test_model}
+# Run model against test data and check results
+test2 <- lm(mod2, test_df)
+summary(test2)
+confint(test2)
+```
+
+### Plug Prediction Back Into TEST Data and Check r2 and RMSE  
+Checking the prediction values against the target value confirms the 0.77 r-squared value compared to the 0.825 from the training data. The RMSE rose from 1.38 to 1.68. This shift is not surprising given fixed 2013 ownership rates, values that ideally would change year-to-year were the data available. Another element impacting accuracy could be the increase in FSR levels from 2008 to 2016. This rise would have been captured by the 2013 training data, but it would weaken model perofrmance in years prior to 2008.  
+
+```{r base_test_r2_rmse}
+# Load predicted values into test_df, check r2 and RMSE
+test_df$predict <- predict(mod2, test_df)
+cor(test_df$predict, test_df$gun_rate)^2
+sqrt(mean((test_df$predict - test_df$gun_rate)^2))
+```
+
+### Check Model Residuals vs Fitted and Q-Q Plots 
+The Residual vs Fitted plots is more balanced compared to the training data as one would expect given the much larger data set. Still, both the residual and Q-Q plots confirm the skewing of observed values at higher FSR levels.
+```{r base_test_resid_qq}
+# Residual & Q-Q Plot
+par(mar = c(4, 4, 2, 2), mfrow = c(1, 2))
+plot(test2, which = c(1, 2))
+```
+
+### Check Identified Outliers  
+
+```{r base_test_outliers}
+# Checking outliers
+test_df[c(847, 612, 441), c("year", "state", "predict", "gun_rate", "own_rate", "buy_reg", "reg_west")]
 ```
 

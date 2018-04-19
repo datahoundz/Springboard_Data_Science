@@ -278,7 +278,8 @@ Like the random forest approach above, the primary reason for gradient boost mod
 
 The machine learning R data file is available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R).
 
-### Machine Learning Process
+Machine Learning Process
+------------------------
 
 A data frame, mach\_data\_df, including *all* primary variables of interest has been created. Region and subregion variables of interest were converted to individual factor variables.
 
@@ -383,7 +384,7 @@ Among other law category variables, child access laws (child\_acc), dealer regul
 
 ### Model Performance on Training Data
 
-The model predicted 82.5% of the variation in the firearm suicide rate on the training data for 2013. Ownership rates have the largest effect but are also subject to a higher standard error. Buyer regulations contribute signifcantly to model accuracy with values of this variable ranging only from 0 to 15. The addition of region West added 3.0 percentage points to prediction accuracy. This modest increase exceeded that of any other region or combination of regions while also maitaining an acceptable signicance level.
+**The model accounted for 82.5% of the variation in the firearm suicide rate on the training data for 2013.** Ownership rates have the largest effect but are also subject to a higher standard error. Buyer regulations contribute signifcantly to model accuracy with values of this variable ranging only from 0 to 15. The addition of region West added 3.0 percentage points to prediction accuracy. This modest increase exceeded that of any other region or combination of regions while also maitaining an acceptable signicance level.
 
     ## 
     ## Call:
@@ -412,17 +413,19 @@ The model predicted 82.5% of the variation in the firearm suicide rate on the tr
     ## buy_reg      -0.659 -0.399
     ## reg_westTRUE  0.428  2.424
 
-### Plug Prediction Back Into Train Data and Check r2 and RMSE
+### Plug Prediction Back Into TRAIN Data and Check r2 and RMSE
+
+Testing predictions against observed values confirms the 0.825 r-squared value, with an RMSE of 1.38.
 
     ## [1] 0.825
 
     ## [1] 1.38
 
-### Check Model Residuals and Q-Q Plots
+### Check Model Residuals vs Fitted and Q-Q Plots
 
-![](07_Capstone_Report_files/figure-markdown_github/base_train_resid_qq-1.png)
+The residual and Q-Q plots indicate reasonable distribution of model error, although the data starts to skew above expected levels at higher values. ![](07_Capstone_Report_files/figure-markdown_github/base_train_resid_qq-1.png)
 
-### Check Outliers
+### Check Identified Outliers
 
     ## # A tibble: 3 x 7
     ##    year state      predict gun_rate own_rate buy_reg reg_west
@@ -430,3 +433,58 @@ The model predicted 82.5% of the variation in the firearm suicide rate on the tr
     ## 1  2013 Alaska       13.0     16.3     0.617       1 TRUE    
     ## 2  2013 Oklahoma      8.26    11.2     0.312       1 FALSE   
     ## 3  2013 Washington    9.84     6.90    0.277       0 TRUE
+
+Apply Regression Model to Test Data
+-----------------------------------
+
+### Model Performance on Test Data
+
+Model performance declined from the initial training data, but this was largely expected given the significant size discrepancy between the training set and the test set. **The model accounted for 77.3% of the variation in the test data set.** The coefficient estimate for the ownership rate dropped but so did the standard error and the t-value, a likely result of the larger data set. The impact of region West increased as did its level of significance. The confidence interval table reflects a much tighter range of values.
+
+    ## 
+    ## Call:
+    ## lm(formula = mod2, data = test_df)
+    ## 
+    ## Residuals:
+    ##    Min     1Q Median     3Q    Max 
+    ## -3.834 -0.923 -0.137  0.846  6.115 
+    ## 
+    ## Coefficients:
+    ##              Estimate Std. Error t value            Pr(>|t|)    
+    ## (Intercept)    5.0766     0.1644    30.9 <0.0000000000000002 ***
+    ## own_rate       8.8886     0.4382    20.3 <0.0000000000000002 ***
+    ## buy_reg       -0.4872     0.0163   -29.8 <0.0000000000000002 ***
+    ## reg_westTRUE   1.7261     0.1211    14.2 <0.0000000000000002 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 1.44 on 846 degrees of freedom
+    ## Multiple R-squared:  0.773,  Adjusted R-squared:  0.772 
+    ## F-statistic:  961 on 3 and 846 DF,  p-value: <0.0000000000000002
+
+    ##               2.5 % 97.5 %
+    ## (Intercept)   4.754  5.399
+    ## own_rate      8.028  9.749
+    ## buy_reg      -0.519 -0.455
+    ## reg_westTRUE  1.488  1.964
+
+### Plug Prediction Back Into TEST Data and Check r2 and RMSE
+
+Checking the prediction values against the target value confirms the 0.77 r-squared value compared to the 0.825 from the training data. The RMSE rose from 1.38 to 1.68. This shift is not surprising given fixed 2013 ownership rates, values that ideally would change year-to-year were the data available. Another element impacting accuracy could be the increase in FSR levels from 2008 to 2016. This rise would have been captured by the 2013 training data, but it would weaken model perofrmance in years prior to 2008.
+
+    ## [1] 0.77
+
+    ## [1] 1.68
+
+### Check Model Residuals vs Fitted and Q-Q Plots
+
+The Residual vs Fitted plots is more balanced compared to the training data as one would expect given the much larger data set. Still, both the residual and Q-Q plots confirm the skewing of observed values at higher FSR levels. ![](07_Capstone_Report_files/figure-markdown_github/base_test_resid_qq-1.png)
+
+### Check Identified Outliers
+
+    ## # A tibble: 3 x 7
+    ##    year state    predict gun_rate own_rate buy_reg reg_west
+    ##   <int> <chr>      <dbl>    <dbl>    <dbl>   <int> <lgl>   
+    ## 1  2012 Wyoming    12.6      17.7    0.538       0 TRUE    
+    ## 2  2016 Oklahoma    8.26     13.2    0.312       1 FALSE   
+    ## 3  2015 Montana    12.5      16.8    0.523       0 TRUE
