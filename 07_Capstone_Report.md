@@ -413,7 +413,7 @@ Among other law category variables, child access laws (child\_acc), dealer regul
     ## buy_reg      -0.659 -0.399
     ## reg_westTRUE  0.428  2.424
 
-### Plug Prediction Back Into TRAIN Data and Check r2 and RMSE
+### Plug Prediction Back Into Training Data and Check r2 and RMSE
 
 Testing predictions against observed values confirms the 0.825 r-squared value, with an RMSE of 1.38.
 
@@ -468,7 +468,7 @@ Model performance declined from the initial training data, but this was largely 
     ## buy_reg      -0.519 -0.455
     ## reg_westTRUE  1.488  1.964
 
-### Plug Prediction Back Into TEST Data and Check r2 and RMSE
+### Plug Prediction Back Into Test Data and Check r2 and RMSE
 
 Checking the prediction values against the target value confirms the 0.77 r-squared value compared to the 0.825 from the training data. The RMSE rose from 1.38 to 1.68. This shift is not surprising given fixed 2013 ownership rates, values that ideally would change year-to-year were the data available. Another element impacting accuracy could be the increase in FSR levels from 2008 to 2016. This rise would have been captured by the 2013 training data, but it would weaken model perofrmance in years prior to 2008.
 
@@ -476,7 +476,7 @@ Checking the prediction values against the target value confirms the 0.77 r-squa
 
     ## [1] 1.68
 
-### Check Model Residuals vs Fitted and Q-Q Plots
+### Check Residuals vs Fitted and Q-Q Plots
 
 The Residual vs Fitted plots is more balanced compared to the training data as one would expect given the much larger data set. Still, both the residual and Q-Q plots confirm the skewing of observed values at higher FSR levels. ![](07_Capstone_Report_files/figure-markdown_github/base_test_resid_qq-1.png)
 
@@ -488,3 +488,231 @@ The Residual vs Fitted plots is more balanced compared to the training data as o
     ## 1  2012 Wyoming    12.6      17.7    0.538       0 TRUE    
     ## 2  2016 Oklahoma    8.26     13.2    0.312       1 FALSE   
     ## 3  2015 Montana    12.5      16.8    0.523       0 TRUE
+
+Random Forest Model with Law Category Variables Only
+----------------------------------------------------
+
+### Table Prepapration and Train-Test Split
+
+``` r
+law_vars <- unique(state_codes_df$var_name)
+law_cats <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
+              "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
+              "immunity_", "dom_viol")
+
+outcome <- c("gun_rate")
+var_names <- law_cats
+
+# Split into train & test data sets at 70/30 ratio
+gp <- runif(nrow(rf_data_df))
+rf_train <- rf_data_df[gp < 0.70, ]
+rf_test <- rf_data_df[gp >= 0.70, ]
+```
+
+### Create Formula and Fit Model
+
+Model r2 and RMSE equivalent (Out of Basket Prediction Error) are displayed below.
+
+``` r
+# Create formula
+fml <- paste(outcome, "~", paste(var_names, collapse = " + "))
+
+# Fit the model
+model_rf <- ranger(fml,
+                   rf_train,
+                   num.trees = 500,
+                   respect.unordered.factors = "order", 
+                   seed = 123)
+model_rf
+```
+
+    ## Ranger result
+    ## 
+    ## Call:
+    ##  ranger(fml, rf_train, num.trees = 500, respect.unordered.factors = "order",      seed = 123) 
+    ## 
+    ## Type:                             Regression 
+    ## Number of trees:                  500 
+    ## Sample size:                      630 
+    ## Number of independent variables:  14 
+    ## Mtry:                             3 
+    ## Target node size:                 5 
+    ## Variable importance mode:         none 
+    ## OOB prediction error (MSE):       1.17 
+    ## R squared (OOB):                  0.88
+
+### Apply Law Category Model to Test Data
+
+Resulting r2 and RMSE are displayed below. The plot illustrates the tight grouping of values along the perfect correlation line. FSR at levels at or above 12 still prove difficult to predict.
+
+``` r
+rf_test$predict <- predict(model_rf, rf_test)$predictions
+
+cor(rf_test$gun_rate, rf_test$predict)^2
+```
+
+    ## [1] 0.906
+
+``` r
+sqrt(mean((rf_test$predict - rf_test$gun_rate)^2))
+```
+
+    ## [1] 0.882
+
+![](07_Capstone_Report_files/figure-markdown_github/rf_ggplot_test-1.png)
+
+### Gain Curve Plot of Random Forest Performance
+
+The plot shows the high degree of accuracy derived from the random forest model. There is virtually no gap between the perfect curve and the curve of the predicted values.
+
+![](07_Capstone_Report_files/figure-markdown_github/rf_gain_plot-1.png)
+
+### Conclusions from Random Forest Model Performance
+
+In the source R-code available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R), a second random forest model is run using individual law variables with slightly higher performance levels. Both of these models suggest that specific legislation classes offer the possibility of impacting firearm suicide rates. Based upon this finding, gradient boost models will be utilized to identify the critical law categories and laws of most interest to legislators and public health professionals.
+
+Gradient Boost Modeling to Identify Critical Law Variables
+----------------------------------------------------------
+
+Gradient boost modeling offers the performance benefits of random forest models with the added benefit of getting to **peak under the hood to view the variables of greatest imapct** to the model. With that in mind, a model will be created utilizing all 132 law variables to assess those most likely to be predictive of a state's firearm suicide rate. It follows that these laws could have the greatest potential effect in reducing firearm suicides.
+
+### Preliminary Gradient Boost Models
+
+In the interest of limitations of time and space, only one gradient boost model utilizing all 132 law variables will be presented here. However, the [source R-code]() includes preliminary models that first assessed the 14 law category variables and then investigated the individual laws within those categories. This process found significant overlap between the final 132-variable model and the preliminary models.
+
+### Create Table and Split Into Train and Test Data Sets
+
+``` r
+# Create table for gb_all_model
+gb_all_df <- sui_method_df %>%
+  filter(year >= 1999) %>%
+  select(state, year, fsr = gun_rate) %>%
+  left_join(state_laws_df, by = join_key) %>%
+  select(state, year, fsr, c(law_vars))
+
+
+# Split into train & test data sets at 70/30 ratio
+gp <- runif(nrow(gb_all_df))
+gb_all_train <- gb_all_df[gp < 0.70, ]
+gb_all_test <- gb_all_df[gp >= 0.70, ]
+```
+
+### Treat Data for Use with xgboost Package
+
+The xgboost package requires that all variables be numeric so the "treatment plan" using the vtreat package performs all the ncessary conversions. This data set did not include any categorical variables, but vtreat would address those items as well if they existed.
+
+``` r
+# Create the treatment plan
+# treat_plan <- designTreatmentsZ(gb_all_train, law_vars)
+# Line above commented out to prevent large output, run above w/o displaying
+
+# Examine scoreFrame
+scoreFrame <- treat_plan %>%
+  use_series(scoreFrame) %>%
+  select(varName, origName, code)
+
+# We only want the rows with codes "clean" or "lev"
+newvars <- scoreFrame %>%
+  filter(code %in% c("clean", "lev")) %>%
+  use_series(varName)
+
+# Create the treated training data
+gb_all_train_treat <- prepare(treat_plan, gb_all_train, varRestriction = newvars)
+
+# Create the treated test data
+gb_all_test_treat <- prepare(treat_plan, gb_all_test, varRestriction = newvars)
+```
+
+### Use Cross-Validation to Determine Best Number of Trees
+
+``` r
+# Run xgb.cv cross validation on gb_all_train
+gb_all_cv <- xgb.cv(data = as.matrix(gb_all_train_treat), 
+                    label = gb_all_train$fsr,
+                    nrounds = 100,
+                    nfold = 5,
+                    objective = "reg:linear",
+                    eta = 0.3,
+                    max_depth = 6,
+                    early_stopping_rounds = 10,
+                    verbose = 0)
+
+# Get the evaluation log 
+eval_log <- as.data.frame(gb_all_cv$evaluation_log)
+eval_log
+```
+
+    ##    iter train_rmse_mean train_rmse_std test_rmse_mean test_rmse_std
+    ## 1     1           5.346        0.03145          5.351         0.163
+    ## 2     2           3.902        0.02317          3.921         0.158
+    ## 3     3           2.888        0.01748          2.924         0.142
+    ## 4     4           2.189        0.01872          2.241         0.132
+    ## 5     5           1.720        0.02385          1.791         0.139
+    ## 6     6           1.403        0.02352          1.486         0.144
+    ## 7     7           1.195        0.01928          1.295         0.148
+    ## 8     8           1.046        0.01437          1.166         0.140
+    ## 9     9           0.943        0.01990          1.087         0.139
+    ## 10   10           0.871        0.01445          1.036         0.140
+    ## 11   11           0.819        0.01167          0.995         0.137
+    ## 12   12           0.784        0.00891          0.970         0.139
+    ## 13   13           0.755        0.01258          0.946         0.127
+    ## 14   14           0.735        0.01582          0.933         0.121
+    ## 15   15           0.719        0.01775          0.921         0.118
+    ## 16   16           0.707        0.01965          0.916         0.119
+    ## 17   17           0.700        0.01784          0.912         0.120
+    ## 18   18           0.693        0.01806          0.911         0.121
+    ## 19   19           0.687        0.01779          0.911         0.122
+    ## 20   20           0.682        0.01777          0.910         0.124
+    ## 21   21           0.677        0.01733          0.908         0.122
+    ## 22   22           0.674        0.01888          0.906         0.123
+    ## 23   23           0.670        0.01876          0.906         0.121
+    ## 24   24           0.667        0.01842          0.905         0.123
+    ## 25   25           0.664        0.01815          0.905         0.123
+    ## 26   26           0.662        0.01804          0.905         0.123
+    ## 27   27           0.659        0.01781          0.906         0.122
+    ## 28   28           0.658        0.01776          0.906         0.120
+    ## 29   29           0.656        0.01812          0.907         0.120
+    ## 30   30           0.654        0.01795          0.907         0.118
+    ## 31   31           0.653        0.01783          0.907         0.117
+    ## 32   32           0.652        0.01805          0.907         0.117
+    ## 33   33           0.651        0.01812          0.906         0.116
+    ## 34   34           0.650        0.01804          0.907         0.116
+    ## 35   35           0.649        0.01831          0.906         0.115
+
+``` r
+# Determine number of trees to minimize training and test error
+eval_log %>% 
+  summarize(ntrees.train = which.min(train_rmse_mean), ntrees.test  = which.min(test_rmse_mean)) 
+```
+
+    ##   ntrees.train ntrees.test
+    ## 1           35          25
+
+### Fit Gradient Boost Model and Apply to Test Data
+
+``` r
+gb_all_model <- xgboost(data = as.matrix(gb_all_train_treat),
+                        label = gb_all_train$fsr,
+                        nrounds = 25,         # Enter number of trees from above
+                        objective = "reg:linear",
+                        eta = 0.3,
+                        depth = 6,
+                        verbose = 0)
+
+# Run model on test data
+gb_all_test$pred <- predict(gb_all_model, as.matrix(gb_all_test_treat))
+```
+
+### Evaluate Gradient Boost Model Performance
+
+![](07_Capstone_Report_files/figure-markdown_github/gb_ggplot-1.png)
+
+### Model r2 and RMSE
+
+    ## [1] 0.903
+
+    ## [1] 0.95
+
+### Gradient Boost Model Gain Curve Plot
+
+![](07_Capstone_Report_files/figure-markdown_github/gb_gain_curve-1.png)

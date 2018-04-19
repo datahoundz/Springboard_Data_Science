@@ -1767,7 +1767,7 @@ confint(mod2)
 
 ```
   
-### Plug Prediction Back Into TRAIN Data and Check r2 and RMSE  
+### Plug Prediction Back Into Training Data and Check r2 and RMSE  
 Testing predictions against observed values confirms the 0.825 r-squared value, with an RMSE of 1.38.
 
 ```{r base_train_r2_rmse}
@@ -1804,7 +1804,7 @@ summary(test2)
 confint(test2)
 ```
 
-### Plug Prediction Back Into TEST Data and Check r2 and RMSE  
+### Plug Prediction Back Into Test Data and Check r2 and RMSE  
 Checking the prediction values against the target value confirms the 0.77 r-squared value compared to the 0.825 from the training data. The RMSE rose from 1.38 to 1.68. This shift is not surprising given fixed 2013 ownership rates, values that ideally would change year-to-year were the data available. Another element impacting accuracy could be the increase in FSR levels from 2008 to 2016. This rise would have been captured by the 2013 training data, but it would weaken model perofrmance in years prior to 2008.  
 
 ```{r base_test_r2_rmse}
@@ -1814,7 +1814,7 @@ cor(test_df$predict, test_df$gun_rate)^2
 sqrt(mean((test_df$predict - test_df$gun_rate)^2))
 ```
 
-### Check Model Residuals vs Fitted and Q-Q Plots 
+### Check Residuals vs Fitted and Q-Q Plots 
 The Residual vs Fitted plots is more balanced compared to the training data as one would expect given the much larger data set. Still, both the residual and Q-Q plots confirm the skewing of observed values at higher FSR levels.
 ```{r base_test_resid_qq}
 # Residual & Q-Q Plot
@@ -1827,5 +1827,237 @@ plot(test2, which = c(1, 2))
 ```{r base_test_outliers}
 # Checking outliers
 test_df[c(847, 612, 441), c("year", "state", "predict", "gun_rate", "own_rate", "buy_reg", "reg_west")]
+```
+
+## Random Forest Model with Law Category Variables Only  
+
+### Table Prepapration and Train-Test Split  
+
+```{r rf_table}
+# Create table for use with ranger package
+rf_data_df <- sui_method_df %>%
+  filter(state != "District of Columbia") %>%
+  left_join(population_df, by = join_key) %>%
+  select(-land_area, -pop.y, -pop.x) %>%
+  left_join(regions_df, by = "state") %>%
+  select(year, state, usps_st, reg_code, subreg_code, gun_rate, pop_density) %>%
+  left_join(gun_own_prx_df, by = join_key) %>%
+  left_join(laws_cat_df, by = join_key) %>%
+  left_join(state_laws_df, by = join_key) %>%
+  filter(year >= 1999)
+
+# Convert region/subregion to factor for linear regression
+rf_data_df$reg_code <- factor(rf_data_df$reg_code)
+rf_data_df$subreg_code <- factor(rf_data_df$subreg_code)
+
+# Create variable for reg_west T/F per feedback from initial model
+# Deciding to create separate variable for each to test
+rf_data_df <- rf_data_df %>%
+  mutate(reg_west = reg_code == 4,
+         reg_neast = reg_code == 1,
+         reg_midw = reg_code == 2,
+         reg_south = reg_code == 3)
+
+# Get law variables from state_codes_df and create law category variable
+law_vars <- unique(state_codes_df$var_name)
+law_cats <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
+              "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
+              "immunity_", "dom_viol")
+```
+
+```{r rf_outcome_ind_var, echo=TRUE}
+law_vars <- unique(state_codes_df$var_name)
+law_cats <- c("deal_reg", "buy_reg", "high_risk", "bkgrnd_chk", "ammo_reg", "poss_reg",
+              "conceal_reg", "assault_mag", "child_acc", "gun_traff", "stnd_grnd", "pre_empt",
+              "immunity_", "dom_viol")
+
+outcome <- c("gun_rate")
+var_names <- law_cats
+
+# Split into train & test data sets at 70/30 ratio
+gp <- runif(nrow(rf_data_df))
+rf_train <- rf_data_df[gp < 0.70, ]
+rf_test <- rf_data_df[gp >= 0.70, ]
+
+```
+
+### Create Formula and Fit Model  
+
+Model r2 and RMSE equivalent (Out of Basket Prediction Error) are displayed below.
+
+```{r rf_model_fit, echo=TRUE}
+# Create formula
+fml <- paste(outcome, "~", paste(var_names, collapse = " + "))
+
+# Fit the model
+model_rf <- ranger(fml,
+                   rf_train,
+                   num.trees = 500,
+                   respect.unordered.factors = "order", 
+                   seed = 123)
+model_rf
+```
+  
+### Apply Law Category Model to Test Data  
+
+Resulting r2 and RMSE are displayed below. The plot illustrates the tight grouping of values along the perfect correlation line. FSR at levels at or above 12 still prove difficult to predict. 
+
+```{r rf_test_results, echo=TRUE}
+rf_test$predict <- predict(model_rf, rf_test)$predictions
+
+cor(rf_test$gun_rate, rf_test$predict)^2
+sqrt(mean((rf_test$predict - rf_test$gun_rate)^2))
+```
+
+```{r rf_ggplot_test}
+
+ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
+  geom_text() + 
+  geom_abline() +
+  expand_limits(y = 0, x = 0) +
+  ylab("Actual Observed Firearm Suicide Rate") +
+  xlab("Predicted Firearm Suicide Rate") +
+  labs(color = "Region Code") +
+  labs(title = "Random Forest Law Category Model Results", 
+       subtitle = "Predicted FSR Levels vs Observed FSR Levels") +
+  labs(caption = "Predictions of FSR based upon law category variables only") +
+  theme(legend.position = "right")
+```
+
+### Gain Curve Plot of Random Forest Performance  
+
+The plot shows the high degree of accuracy derived from the random forest model. There is virtually no gap between the perfect curve and the curve of the predicted values.  
+
+```{r rf_gain_plot}
+GainCurvePlot(rf_test, "predict", "gun_rate", "Random Forest Law Category Model")
+```
+
+### Conclusions from Random Forest Model Performance  
+
+In the source R-code available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R), a second random forest model is run using individual law variables with slightly higher performance levels. Both of these models suggest that specific legislation classes offer the possibility of impacting firearm suicide rates. Based upon this finding, gradient boost models will be utilized to identify the critical law categories and laws of most interest to legislators and public health professionals. 
+
+
+## Gradient Boost Modeling to Identify Critical Law Variables  
+
+Gradient boost modeling offers the performance benefits of random forest models with the added benefit of getting to __peak under the hood to view the variables of greatest imapct__ to the model. With that in mind, a model will be created utilizing all 132 law variables to assess those most likely to be predictive of a state's firearm suicide rate. It follows that these laws could have the greatest potential effect in reducing firearm suicides. 
+
+### Preliminary Gradient Boost Models  
+
+In the interest of limitations of time and space, only one gradient boost model utilizing all 132 law variables will be presented here. However, the [source R-code]() includes preliminary models that first assessed the 14 law category variables and then investigated the individual laws within those categories. This process found significant overlap between the final 132-variable model and the preliminary models.  
+
+### Create Table and Split Into Train and Test Data Sets  
+
+```{r gb_model_tbl, echo=TRUE}
+# Create table for gb_all_model
+gb_all_df <- sui_method_df %>%
+  filter(year >= 1999) %>%
+  select(state, year, fsr = gun_rate) %>%
+  left_join(state_laws_df, by = join_key) %>%
+  select(state, year, fsr, c(law_vars))
+
+
+# Split into train & test data sets at 70/30 ratio
+gp <- runif(nrow(gb_all_df))
+gb_all_train <- gb_all_df[gp < 0.70, ]
+gb_all_test <- gb_all_df[gp >= 0.70, ]
+```
+
+### Treat Data for Use with xgboost Package  
+The xgboost package requires that all variables be numeric so the "treatment plan" using the vtreat package performs all the ncessary conversions. This data set did not include any categorical variables, but vtreat would address those items as well if they existed.  
+
+```{r gb_treat_hide, include=FALSE}
+treat_plan <- designTreatmentsZ(gb_all_train, law_vars)
+```
+
+
+```{r gb_treat, echo=TRUE}
+# Create the treatment plan
+# treat_plan <- designTreatmentsZ(gb_all_train, law_vars)
+# Line above commented out to prevent large output, run above w/o displaying
+
+# Examine scoreFrame
+scoreFrame <- treat_plan %>%
+  use_series(scoreFrame) %>%
+  select(varName, origName, code)
+
+# We only want the rows with codes "clean" or "lev"
+newvars <- scoreFrame %>%
+  filter(code %in% c("clean", "lev")) %>%
+  use_series(varName)
+
+# Create the treated training data
+gb_all_train_treat <- prepare(treat_plan, gb_all_train, varRestriction = newvars)
+
+# Create the treated test data
+gb_all_test_treat <- prepare(treat_plan, gb_all_test, varRestriction = newvars)
+```
+  
+### Use Cross-Validation to Determine Best Number of Trees  
+
+```{r cv_tree_cnt, echo=TRUE}
+# Run xgb.cv cross validation on gb_all_train
+gb_all_cv <- xgb.cv(data = as.matrix(gb_all_train_treat), 
+                    label = gb_all_train$fsr,
+                    nrounds = 100,
+                    nfold = 5,
+                    objective = "reg:linear",
+                    eta = 0.3,
+                    max_depth = 6,
+                    early_stopping_rounds = 10,
+                    verbose = 0)
+
+# Get the evaluation log 
+eval_log <- as.data.frame(gb_all_cv$evaluation_log)
+eval_log
+
+# Determine number of trees to minimize training and test error
+eval_log %>% 
+  summarize(ntrees.train = which.min(train_rmse_mean), ntrees.test  = which.min(test_rmse_mean)) 
+```
+
+### Fit Gradient Boost Model and Apply to Test Data  
+
+```{r gb_fit_apply, echo=TRUE}
+gb_all_model <- xgboost(data = as.matrix(gb_all_train_treat),
+                        label = gb_all_train$fsr,
+                        nrounds = 25,         # Enter number of trees from above
+                        objective = "reg:linear",
+                        eta = 0.3,
+                        depth = 6,
+                        verbose = 0)
+
+# Run model on test data
+gb_all_test$pred <- predict(gb_all_model, as.matrix(gb_all_test_treat))
+```
+
+### Evaluate Gradient Boost Model Performance  
+```{r gb_ggplot}
+gb_all_test %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = pred, y = fsr, color = region, label = usps_st)) + 
+  geom_text() + 
+  geom_abline() +  
+  expand_limits(y = 0, x = 0) +
+  ylab("Actual Observed Firearm Suicide Rate") +
+  xlab("Predicted Firearm Suicide Rate") +
+  labs(color = "Region Code") +
+  labs(title = "Gradient Boost All Laws Model Results", 
+       subtitle = "Predicted FSR Levels vs Observed FSR Levels") +
+  labs(caption = "Predictions of FSR based upon all 132 law variables") +
+  theme(legend.position = "right")
+
+```
+
+### Model r2 and RMSE  
+```{r gb_eval, echo=FALSE}
+
+# Check r2 and RMSE
+cor(gb_all_test$pred, gb_all_test$fsr)^2
+sqrt(mean((gb_all_test$pred - gb_all_test$fsr)^2))
+```
+
+### Gradient Boost Model Gain Curve Plot  
+```{r gb_gain_curve}
+GainCurvePlot(gb_all_test, "pred", "fsr", "Gradient Boost Model")
 ```
 
