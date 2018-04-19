@@ -67,9 +67,14 @@ test_df <- mach_data_df %>% filter(year != 2013)
 # ==================================================================================
 
 # Run correlation matrix on prospective variables
-train_df[ , 8:ncol(train_df)] %>%
-  cor()
+train_df[ , 8:ncol(train_df)] %>% cor()
 
+# Arrange variables by prospective correlation w/ gun_rate
+cor_df <- train_df[ , 8:ncol(train_df)] %>% cor()
+cor_df <- as.data.frame(as.table(cor_df))
+cor_df %>%
+  filter(Var2 == "gun_rate") %>%
+  arrange(desc(abs(Freq)))
 
 # Check single variable linear models
 mod1 <- lm(gun_rate ~ buy_reg, train_df)
