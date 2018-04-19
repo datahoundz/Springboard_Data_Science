@@ -263,7 +263,7 @@ model_rf
 rf_test$predict <- predict(model_rf, rf_test)$predictions
 
 cor(rf_test$gun_rate, rf_test$predict)^2
-(rf_rmse <- sqrt(mean((rf_test$predict - rf_test$gun_rate)^2)))
+sqrt(mean((rf_test$predict - rf_test$gun_rate)^2))
 # r2 of 0.895 and RMSE of 1.04 using gun law variables only
 
 ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
@@ -275,7 +275,7 @@ GainCurvePlot(rf_test, "predict", "gun_rate", "Random Forest Law Category Model"
 
 # ==================================================================================
 # 
-# Develop model w/ xgboost package to assess law variable contribution
+# Develop model w/ xgboost package to assess law category variable contribution
 # 
 # ==================================================================================
 
