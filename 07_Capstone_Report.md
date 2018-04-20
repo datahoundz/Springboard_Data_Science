@@ -17,7 +17,7 @@ The 2015 Guns & Ammo rankings for ["Best States for Gun Owners"](http://www.guns
 Abstract
 --------
 
-This project will explore the often overlooked issue of firearm suicide in the United States. The analysis will include an overall picture of the degree and distribution of firearm suicides and an investigation of the key state-level variables of gun ownership rates and gun control legislation. Linear regression models will be developed to test the relationship between ownership levels, gun law categories and state firearm suicide rates. Finally, specific classes of gun laws will be evaulated to determine their potential effect in reducing firearm suicide deaths.
+This project will explore the often overlooked issue of firearm suicide in the United States. The analysis will include an overall picture of the degree and distribution of firearm suicides and an investigation of the key state-level variables of gun ownership rates and gun control legislation. Linear regression models will be developed to test the relationship between ownership levels, gun law categories and state firearm suicide rates. Finally, specific classes of gun laws will be evaluated to determine their potential effect in reducing firearm suicide deaths.
 
 The Data
 --------
@@ -41,7 +41,7 @@ The Giffords gun law data included letter grades, but the analysis would be bett
 
 ### Collapsing Variables for Boston University State Gun Law Data
 
-The state gun law data tracked back to 1991 and included 134 gun law variables. First, the data was filtered to include only the 1999-2016 timeframe covered by the CDC data. Second, and much more complicated, a law category data table was created with specific laws grouped into broader categories reducing the number of gun law variables from 134 to 14. The additional source state law code file facilitated this process, providing the category names and the related variables for the required mutate sequence. The original disaggregated file was retained for potential use at the machine learning phase of the capstone project.
+The state gun law data tracked back to 1991 and included 134 gun law variables. First, the data was filtered to include only the 1999-2016 time frame covered by the CDC data. Second, and much more complicated, a law category data table was created with specific laws grouped into broader categories reducing the number of gun law variables from 134 to 14. The additional source state law code file facilitated this process, providing the category names and the related variables for the required mutate sequence. The original disaggregated file was retained for potential use at the machine learning phase of the capstone project.
 
 ### State Region and Subregion Census Data
 
@@ -54,7 +54,7 @@ Data Issues
 
 ### Excluding the District of Columbia
 
-The District of Columbia was excluded from the anlaysis. As the lone geographical unit that is both a city and a state, its homicide rates were extremely high skewing any plots that included it. Inversely, DC's suicide rate is the lowest in the country with several years posting no suicide data at all. Also, several other data sources include only state level data without figures for DC. It is believed that these reasons justify its exclusion from this analysis.
+The District of Columbia was excluded from the analysis. As the lone geographical unit that is both a city and a state, its homicide rates were extremely high skewing any plots that included it. Inversely, DC's suicide rate is the lowest in the country with several years posting no suicide data at all. Also, several other data sources include only state level data without figures for DC. It is believed that these reasons justify its exclusion from this analysis.
 
 ### Gun Ownership Rates
 
@@ -64,7 +64,7 @@ Gun ownership data presents conflicting issues. The survey data acquired from th
 
 ### State Firearm Laws
 
-The State Firearm Law database tracks 132 separate law variables over more than twenty years. For purposes of simplification, the 132 laws were grouped into the 14 larger categories outlined in the code file. Yet, the most frequent count for many of these categories remains zero as shown in this [linked map plot](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/law_cat_map.png) (zero values in pale green). In these cases the measure is more binary than one of degree - does the state have *any* laws within a given category? This makes comaprisons between states more challenging, especially when combined with gun ownership data for only a single year.
+The State Firearm Law database tracks 132 separate law variables over more than twenty years. For purposes of simplification, the 132 laws were grouped into the 14 larger categories outlined in the code file. Yet, the most frequent count for many of these categories remains zero as shown in this [linked map plot](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/law_cat_map.png) (zero values in pale green). In these cases the measure is more binary than one of degree - does the state have *any* laws within a given category? This makes comparisons between states more challenging, especially when combined with gun ownership data for only a single year.
 
 Firearm Suicide Takes More Lives, and It's Getting Worse
 --------------------------------------------------------
@@ -147,7 +147,7 @@ Rural states rank higher for FSR across all four major regions, while highly urb
 
 ### Gun Ownership Tiers Call Out Impact on FSR
 
-High ownership states account for 12 ot the 13 states with the highest FSR levels. Low ownership states included 11 of the 13 lowest FSR states. Hawaii is almost certainly misrepresented as a high ownership state. Dr. Michael Siegel's proxy data suggests an average ownership rate of only 12.2% as compared to 45.1% from the Kalesan 2013 survey data.
+High ownership states account for 12 of the 13 states with the highest FSR levels. Low ownership states included 11 of the 13 lowest FSR states. Hawaii is almost certainly misrepresented as a high ownership state. Dr. Michael Siegel's proxy data suggests an average ownership rate of only 12.2% as compared to 45.1% from the Kalesan 2013 survey data.
 
 ![](07_Capstone_Report_files/figure-markdown_github/fsr_own_tier-1.png)
 
@@ -379,7 +379,7 @@ Among other law category variables, child access laws (child\_acc), dealer regul
 
 ### Model Performance on Training Data
 
-**The model accounted for 82.5% of the variation in the firearm suicide rate on the training data for 2013.** Ownership rates have the largest effect but are also subject to a higher standard error. Buyer regulations contribute signifcantly to model accuracy with values of this variable ranging only from 0 to 15. The addition of region West added 3.0 percentage points to prediction accuracy. This modest increase exceeded that of any other region or combination of regions while also maitaining an acceptable signicance level.
+**The model accounted for 82.5% of the variation in the firearm suicide rate on the training data for 2013.** Ownership rates have the largest effect but are also subject to a higher standard error. Buyer regulations contribute significantly to model accuracy with values of this variable ranging only from 0 to 15. The addition of region West added 3.0 percentage points to prediction accuracy. This modest increase exceeded that of any other region or combination of regions while also maintaining an acceptable significance level.
 
     ## 
     ## Call:
@@ -467,7 +467,7 @@ Model performance declined from the initial training data, but this was largely 
 
 ### Plug Prediction Back Into Test Data and Check r2 and RMSE
 
-Checking the prediction values against the target value confirms the 0.77 r-squared value compared to the 0.825 from the training data. The RMSE rose from 1.38 to 1.68. This shift is not surprising given fixed 2013 ownership rates, values that ideally would change year-to-year were the data available. Another element impacting accuracy could be the increase in FSR levels from 2008 to 2016. This rise would have been captured by the 2013 training data, but it would weaken model perofrmance in years prior to 2008.
+Checking the prediction values against the target value confirms the 0.77 r-squared value compared to the 0.825 from the training data. The RMSE rose from 1.38 to 1.68. This shift is not surprising given fixed 2013 ownership rates, values that ideally would change year-to-year were the data available. Another element impacting accuracy could be the increase in FSR levels from 2008 to 2016. This rise would have been captured by the 2013 training data, but it would weaken model performance in years prior to 2008.
 
     ## [1] 0.77
 
@@ -836,19 +836,19 @@ Gun laws do make a difference in reducing firearm suicide. These effects are blu
 
 ### Rural States are at Greatest Risk
 
-Across all regions, rural states experience sharply higher FSR levels, and higher gun ownerhip no doubt contributesd to this fact. But these states also have significantly higher overall suicide rates as well, partially driven by gun deaths. This suggests these areas would benefit most from simple, highly targeted legislation. Unfortunately, many of these same states are moving in the opposite direction.
+Across all regions, rural states experience sharply higher FSR levels, and higher gun ownership no doubt contributes to this fact. But these states also have significantly higher overall suicide rates as well, partially driven by gun deaths. This suggests these areas would benefit most from simple, highly targeted legislation. Unfortunately, many of these same states are moving in the opposite direction.
 
 ### The Illusion of Self-Protection
 
-Outside of a few highly regulated states, the risk of being killed by an armed assailant is far outweighed by the hidden threat a gun poses to its owner. Notably, homicide rates tend be lower in the handful of states where an assailant poses a greater threat.
+Outside of a few highly regulated states, the risk of being killed by an armed assailant is far outweighed by the hidden threat a gun poses to its owner or the owner's family. Notably, homicide rates tend be lower in the handful of states where an assailant poses a greater threat.
 
-### Gun Regulation Does *Not* Mean No Guns
+### Gun Regulation Does Not Mean No Guns
 
 It bears noting that the number of guns does not automatically translate into greater risk. California, by ballpark estimates, probably ranks in the top 5 states for total number of guns. Illinois also ranks quite high. The difference is that both of these high population states regulate ownership much more effectively.
 
 ### Firearm Suicide is a Public Health Issue
 
-This study focused on data related to guns and gun laws, but the broader issue is one of mental health. Doctors should be allowed to ask patients if they own guns. Government researchers should be able to conduct detailed studies of the epidemic character of gun deaths. Data should be tracked at all governmental levels and made available to the general public. The *avoidable* loss of 20,000 plus lives every year should not be ignored.
+This study focused on data related to guns and gun laws, but the broader issue is one of mental health. Doctors should be allowed to ask patients if they own guns. Government researchers should be able to conduct detailed studies of the epidemic character of gun deaths. Data should be tracked at all governmental levels and made available to the general public. The *avoidable* loss of 20,000 plus lives every year should not be ignored for political reasons.
 
 Areas for Further Research
 --------------------------
@@ -863,18 +863,18 @@ Another area of interest raised is the disparity between suicide rates in the Mo
 
 ### State Level Gun Ownership Research
 
-The Centers for Disease Control do a great job of tracking, reporting and providing data on firearm suicide. State level data on gun ownership, though, is nearly non-existent.
+The Centers for Disease Control does a tremendous job of tracking, reporting and providing data on firearm suicide. State level data on gun ownership, though, is nearly non-existent.
 
 ### Social and Economic Influence on Firearm Suicide
 
-Utilizing census data to analyze state level social and economic predictors of firearm suicide offers an compelling avenue for study. It was initally hoped to address those elements in this analysis, but data sets were already multiplying too rapidly.
+Utilizing census data to analyze state level social and economic predictors of firearm suicide offers a compelling avenue for study. It was initially hoped to address those elements in this analysis, but data sets were already multiplying too rapidly.
 
 Recommendations to Legislators and Gun Regulation Advocates
 -----------------------------------------------------------
 
 ### Focusing on Firearm Suicide Reduces Immediate Rejection
 
-Many gun owners view any effort to regulate gun ownership as a ploy to take their guns away. A focus on firearm suicide places the gun owner at the center of concern. The data is alarming and most so in regions where gun legislation is near non-existent and guns are omnipresent. The desire is to protect gun owners and their families.
+Many gun owners view any effort to regulate gun ownership as a ploy to take their guns away. A focus on firearm suicide places the gun owner at the center of concern. The data is alarming and most so in regions where gun legislation is near non-existent and guns are omnipresent. The primary goal of this effort is to protect gun owners and their families.
 
 ### Target Efforts on Most Effective Legislation
 
@@ -882,10 +882,10 @@ Across numerous iterations, buyer regulations generally and license/permit requi
 
 ### Build the Argument with Data, Build the Story with People
 
-Tying the data to individual stories needs to be a critical element in any effort to promote legislation to reduce firearm suicides. Gun owners need to see themselves or their loved ones in the tragic stories of others. This is critical to overcoming resistance and to accepting the data presented.
+Tying the data to individual stories needs to be a critical element in any effort to promote legislation to reduce firearm suicides. Gun owners need to see themselves or their loved ones in the tragic stories of others. This is critical to overcoming conscious or subconscious resistance to the data presented.
 
 ### Advocate and/or Conduct Better Data Collection and Access
 
-Dr. Michael Siegel and the School of Public Health at Boston University have done a remarkable job of collecting and sharing state firearm law data. This project would have been impossible without their resources. Other groups do similar work, but none that were encountered made access and interaction with the data so simple. Similar efforts should be extended to all groups involved in gun regulation advocacy. Special efforts should be made to track state level gun ownership rates at a minimum. Dr. Siegel's proxy ownership measure is an excellent tool where applicable, but solid consistent survey data would be more robust.
+Dr. Michael Siegel and the School of Public Health at Boston University have done a remarkable job of collecting and sharing [state firearm law data](https://www.statefirearmlaws.org/table.html). This project would have been impossible without their resources. Other groups do similar work, but none that were encountered made access and interaction with the data so simple. Similar efforts should be extended to all groups involved in gun regulation advocacy. Special efforts should be made to track state level gun ownership rates at a minimum. Dr. Siegel's proxy ownership measure is an excellent tool where applicable, but solid consistent survey data would be more robust.
 
 ###
