@@ -239,11 +239,7 @@ Preliminary Conclusions
 
 Analysis to this point suggests some strong candidate variables for predicting a state's firearm suicide rate, several of which correlate with each other. These include region, gun ownership rates, the level of gun law restrictions and population density.
 
-During the machine learning phase of the project, an effort will be made to focus more closely on regional distinctions. The analysis will also shift from the simple total number of laws to explore specific law categories and perhaps even individual laws.
-
-The goal of this analysis is to explore firearm suicide; however, preliminary findings suggest that many of the candidate variables are reasonably strong predictors of overall suicide levels as well. This is to be expected as the FSR represents around half of the overall suicide rate. But it would be interesting to explore how specific classes of gun legislation or other actions might effectively reduce the overall rate, especially in states with disproprtionately high FSR levels.
-
-Another area of interest raised is the disparity between suicide rates in the Mountain and Great Plains subregions, both of which are characterized by similarly low population densities. Additionally sharp differences between neighboring states, Indiana and Illinois for example, present opportunities for more focused investigation of states with similar population profiles.
+During the machine learning phase of the project, an effort will be made to focus more closely on regional distinctions. The analysis will also shift from the simple total number of laws to explore specific law categories and even individual laws.
 
 Machine Learning Plan
 ---------------------
@@ -704,7 +700,7 @@ gb_all_test$pred <- predict(gb_all_model, as.matrix(gb_all_test_treat))
 
 ### Model r2 and RMSE
 
-At an r2 of 0.923 and an RMSE of 0.850, the gradient boost model outperforms the earlier random forest model. The gain curve plot below is virtually identical to the random forest performance as well.
+At an r2 of 0.923 and an RMSE of 0.850, the gradient boost model outperforms the earlier law category random forest model. The gain curve plot below is virtually identical to the random forest performance as well.
 
     ## [1] 0.923
 
@@ -805,3 +801,91 @@ The resulting residual and Q-Q plots reflect the same challenges that faced the 
 ### Manual Regression Model Based on Gradient Boost Gain Curve Plot
 
 ![](07_Capstone_Report_files/figure-markdown_github/gb_man_gain_curve-1.png)
+
+### Critical Law Variables from Machine Learning Modeling
+
+The previous exercise called out eight law variables that were capable of explaining around 70% of the variation in firearm suicide rates. An exploration of those variables is in order.
+
+**permith**: A license or permit is required to purchase handguns
+**opencarrypermith**: No open carry of handguns is allowed in public places unless the person has a concealed carry or handgun carry permit
+**capuses**: Criminal liability for negligent storage of guns if child uses or carries the gun
+**mayissue**: "May issue" state (granting of cc permits at discretion of local authorities)
+**dealerh**: State dealer license required for handgun sales
+**ccrenewbackground**: Concealed carry permit renewal requires a new background check
+**permitconcealed**: Permit required to carry concealed weapons
+**recordsdealerh**: Record keeping and retention required for licensed dealers for handgun sales
+
+### Summary Table of Critical Law Variables
+
+    ##                 Law States                   Category       Subcategory
+    ## 1           permith     13          Buyer regulations        Permitting
+    ## 2  opencarrypermith     19     Possession regulations        Open carry
+    ## 3           capuses     16    Child access prevention           Storage
+    ## 4          mayissue      9 Concealed carry permitting        Permitting
+    ## 5           dealerh     14         Dealer regulations         Licensing
+    ## 6 ccrenewbackground     40 Concealed carry permitting Background checks
+    ## 7   permitconcealed     41 Concealed carry permitting        Permitting
+    ## 8    recordsdealerh     19         Dealer regulations     Recordkeeping
+
+Conclusions
+-----------
+
+### Gun Legislation Makes a Difference
+
+Gun laws do make a difference in reducing firearm suicide. These effects are blurred by regional influences, rural/urban distinctions and gun ownership rates. The overwhelming weight of the evidence, however, supports the connection between strong gun legislation and fewer firearm suicides.
+
+### Rural States are at Greatest Risk
+
+Across all regions, rural states experience sharply higher FSR levels, and higher gun ownerhip no doubt contributesd to this fact. But these states also have significantly higher overall suicide rates as well, partially driven by gun deaths. This suggests these areas would benefit most from simple, highly targeted legislation. Unfortunately, many of these same states are moving in the opposite direction.
+
+### The Illusion of Self-Protection
+
+Outside of a few highly regulated states, the risk of being killed by an armed assailant is far outweighed by the hidden threat a gun poses to its owner. Notably, homicide rates tend be lower in the handful of states where an assailant poses a greater threat.
+
+### Gun Regulation Does *Not* Mean No Guns
+
+It bears noting that the number of guns does not automatically translate into greater risk. California, by ballpark estimates, probably ranks in the top 5 states for total number of guns. Illinois also ranks quite high. The difference is that both of these high population states regulate ownership much more effectively.
+
+### Firearm Suicide is a Public Health Issue
+
+This study focused on data related to guns and gun laws, but the broader issue is one of mental health. Doctors should be allowed to ask patients if they own guns. Government researchers should be able to conduct detailed studies of the epidemic character of gun deaths. Data should be tracked at all governmental levels and made available to the general public. The *avoidable* loss of 20,000 plus lives every year should not be ignored.
+
+Areas for Further Research
+--------------------------
+
+### Application to Other Areas of Gun Violence
+
+Reverse engineering to assess the most likely effective law variables could be applied to other areas of gun violence like homicide, mass shootings, school shootings and accidental deaths. In fact, much of the structure of this analysis could translate easily to other issues.
+
+### Regional & State Level Investigation
+
+Another area of interest raised is the disparity between suicide rates in the Mountain and Great Plains subregions, both of which are characterized by similarly low population densities. Additionally sharp differences between neighboring states, Indiana and Illinois for example, present opportunities for more focused investigation of states with similar population profiles.
+
+### State Level Gun Ownership Research
+
+The Centers for Disease Control do a great job of tracking, reporting and providing data on firearm suicide. State level data on gun ownership, though, is nearly non-existent.
+
+### Social and Economic Influence on Firearm Suicide
+
+Utilizing census data to analyze state level social and economic predictors of firearm suicide offers an compelling avenue for study. It was initally hoped to address those elements in this analysis, but data sets were already multiplying too rapidly.
+
+Recommendations to Legislators and Gun Regulation Advocates
+-----------------------------------------------------------
+
+### Focusing on Firearm Suicide Reduces Immediate Rejection
+
+Many gun owners view any effort to regulate gun ownership as a ploy to take their guns away. A focus on firearm suicide places the gun owner at the center of concern. The data is alarming and most so in regions where gun legislation is near non-existent and guns are omnipresent. The desire is to protect gun owners and their families.
+
+### Target Efforts on Most Effective Legislation
+
+Across numerous iterations, buyer regulations generally and license/permit requirements for handguns specifically made the largest difference to model performance. This supports the idea that these legislative items could most effectively reduce firearm suicides. Other candidates include dealer regulations, child access laws and allowing local restrictions (absence of preemption). Additional research is in order, but this results oriented approach to targeted legislation could prove fruitful.
+
+### Build the Argument with Data, Build the Story with People
+
+Tying the data to individual stories needs to be a critical element in any effort to promote legislation to reduce firearm suicides. Gun owners need to see themselves or their loved ones in the tragic stories of others. This is critical to overcoming resistance and to accepting the data presented.
+
+### Advocate and/or Conduct Better Data Collection and Access
+
+Dr. Michael Siegel and the School of Public Health at Boston University have done a remarkable job of collecting and sharing state firearm law data. This project would have been impossible without their resources. Other groups do similar work, but none that were encountered made access and interaction with the data so simple. Similar efforts should be extended to all groups involved in gun regulation advocacy. Special efforts should be made to track state level gun ownership rates at a minimum. Dr. Siegel's proxy ownership measure is an excellent tool where applicable, but solid consistent survey data would be more robust.
+
+###
