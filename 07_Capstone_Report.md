@@ -325,11 +325,10 @@ Two methods were considered for dividing the train and test data. It was decided
 
 ``` r
 # Split into train & test data sets at 70/30 ratio
-# gp <- runif(nrow(mach_data_df))
-# train_df <- mach_data_df[gp < 0.70, ]
-# test_df <- mach_data_df[gp >= 0.70, ]
-# dim(train_df)
-# dim(test_df)
+# set.seed(123) 
+# sample <- sample.int(n = nrow(mach_data_df), size = floor(0.70 * nrow(mach_data_df)), replace = F)
+# train_df <- mach_data_df[sample, ]
+# test_df  <- mach_data_df[-sample, ]
 
 # # Use 2013 as train and balance as test
 train_df <- mach_data_df %>% filter(year == 2013)
@@ -423,7 +422,9 @@ Testing predictions against observed values confirms the 0.825 r-squared value, 
 
 ### Check Model Residuals vs Fitted and Q-Q Plots
 
-The residual and Q-Q plots indicate reasonable distribution of model error, although the data starts to skew above expected levels at higher values. ![](07_Capstone_Report_files/figure-markdown_github/base_train_resid_qq-1.png)
+The residual and Q-Q plots indicate reasonable distribution of model error, although the data starts to skew above expected levels at higher values.
+
+![](07_Capstone_Report_files/figure-markdown_github/base_train_resid_qq-1.png)
 
 ### Check Identified Outliers
 
@@ -478,7 +479,9 @@ Checking the prediction values against the target value confirms the 0.77 r-squa
 
 ### Check Residuals vs Fitted and Q-Q Plots
 
-The Residual vs Fitted plots is more balanced compared to the training data as one would expect given the much larger data set. Still, both the residual and Q-Q plots confirm the skewing of observed values at higher FSR levels. ![](07_Capstone_Report_files/figure-markdown_github/base_test_resid_qq-1.png)
+The Residual vs Fitted plots is more balanced compared to the training data as one would expect given the much larger data set. Still, both the residual and Q-Q plots confirm the skewing of observed values at higher FSR levels.
+
+![](07_Capstone_Report_files/figure-markdown_github/base_test_resid_qq-1.png)
 
 ### Check Identified Outliers
 
@@ -504,14 +507,15 @@ outcome <- c("gun_rate")
 var_names <- law_cats
 
 # Split into train & test data sets at 70/30 ratio
-gp <- runif(nrow(rf_data_df))
-rf_train <- rf_data_df[gp < 0.70, ]
-rf_test <- rf_data_df[gp >= 0.70, ]
+set.seed(123) 
+sample <- sample.int(n = nrow(rf_data_df), size = floor(0.70 * nrow(rf_data_df)), replace = F)
+rf_train <- rf_data_df[sample, ]
+rf_test  <- rf_data_df[-sample, ]
 ```
 
 ### Create Formula and Fit Model
 
-Model r2 and RMSE equivalent (Out of Basket Prediction Error) are displayed below.
+Model r2 of 0.88 and RMSE equivalent (Out of Basket Prediction Error) of 1.12 on the training data represent a major improvement on the previous manual regression model.
 
 ``` r
 # Create formula
@@ -538,26 +542,16 @@ model_rf
     ## Mtry:                             3 
     ## Target node size:                 5 
     ## Variable importance mode:         none 
-    ## OOB prediction error (MSE):       1.17 
+    ## OOB prediction error (MSE):       1.12 
     ## R squared (OOB):                  0.88
 
 ### Apply Law Category Model to Test Data
 
-Resulting r2 and RMSE are displayed below. The plot illustrates the tight grouping of values along the perfect correlation line. FSR at levels at or above 12 still prove difficult to predict.
+Resulting r2 of 0.904 and RMSE of 0.945 actually improve upon performance against the training data. The plot below illustrates the tight grouping of values along the ideal correlation line. FSR levels at or above 12 still prove difficult to predict.
 
-``` r
-rf_test$predict <- predict(model_rf, rf_test)$predictions
+    ## [1] 0.904
 
-cor(rf_test$gun_rate, rf_test$predict)^2
-```
-
-    ## [1] 0.906
-
-``` r
-sqrt(mean((rf_test$predict - rf_test$gun_rate)^2))
-```
-
-    ## [1] 0.882
+    ## [1] 0.945
 
 ![](07_Capstone_Report_files/figure-markdown_github/rf_ggplot_test-1.png)
 
@@ -569,16 +563,16 @@ The plot shows the high degree of accuracy derived from the random forest model.
 
 ### Conclusions from Random Forest Model Performance
 
-In the source R-code available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R), a second random forest model is run using individual law variables with slightly higher performance levels. Both of these models suggest that specific legislation classes offer the possibility of impacting firearm suicide rates. Based upon this finding, gradient boost models will be utilized to identify the critical law categories and laws of most interest to legislators and public health professionals.
+In the source R-code available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R), a second random forest model is run using individual law variables with slightly higher performance levels. Both of these models suggest that specific legislation classes offer the possibility of impacting firearm suicide rates. Based upon this finding, gradient boost models will be utilized to identify the critical law categories and individual laws of most interest to legislators and public health professionals.
 
 Gradient Boost Modeling to Identify Critical Law Variables
 ----------------------------------------------------------
 
-Gradient boost modeling offers the performance benefits of random forest models with the added benefit of getting to **peak under the hood to view the variables of greatest imapct** to the model. With that in mind, a model will be created utilizing all 132 law variables to assess those most likely to be predictive of a state's firearm suicide rate. It follows that these laws could have the greatest potential effect in reducing firearm suicides.
+Gradient boost modeling offers the performance benefits of random forest models with the added benefit of getting to peak under the hood to view the variables of greatest impact to the model. With that in mind, a model will be created utilizing all 132 law variables to assess those most likely to be predictive of a state's firearm suicide rate. It follows that these laws could have the greatest potential effect in reducing firearm suicides.
 
 ### Preliminary Gradient Boost Models
 
-In the interest of limitations of time and space, only one gradient boost model utilizing all 132 law variables will be presented here. However, the [source R-code]() includes preliminary models that first assessed the 14 law category variables and then investigated the individual laws within those categories. This process found significant overlap between the final 132-variable model and the preliminary models.
+In light of limitations of time and space, only one gradient boost model utilizing all 132 law variables will be presented here. However, the [source R-code]() includes preliminary models that first assessed the 14 law category variables and then investigated the individual laws within those categories. This process found significant overlap between the final 132-variable model and the preliminary models.
 
 ### Create Table and Split Into Train and Test Data Sets
 
@@ -590,28 +584,28 @@ gb_all_df <- sui_method_df %>%
   left_join(state_laws_df, by = join_key) %>%
   select(state, year, fsr, c(law_vars))
 
-
 # Split into train & test data sets at 70/30 ratio
-gp <- runif(nrow(gb_all_df))
-gb_all_train <- gb_all_df[gp < 0.70, ]
-gb_all_test <- gb_all_df[gp >= 0.70, ]
+set.seed(123) 
+sample <- sample.int(n = nrow(gb_all_df), size = floor(0.70 * nrow(gb_all_df)), replace = F)
+gb_all_train <- gb_all_df[sample, ]
+gb_all_test  <- gb_all_df[-sample, ]
 ```
 
 ### Treat Data for Use with xgboost Package
 
-The xgboost package requires that all variables be numeric so the "treatment plan" using the vtreat package performs all the ncessary conversions. This data set did not include any categorical variables, but vtreat would address those items as well if they existed.
+The xgboost package requires that all variables be numeric. The "treatment plan" below uses the vtreat package to make all necessary conversions. This data set did not include any categorical variables, but vtreat would address those items as well if they existed.
 
 ``` r
 # Create the treatment plan
 # treat_plan <- designTreatmentsZ(gb_all_train, law_vars)
-# Line above commented out to prevent large output, run above w/o displaying
+# Line above commented out to prevent large output, run w/o displaying
 
-# Examine scoreFrame
+# Create scoreFrame
 scoreFrame <- treat_plan %>%
   use_series(scoreFrame) %>%
   select(varName, origName, code)
 
-# We only want the rows with codes "clean" or "lev"
+# Retain rows with "clean" and "lev"
 newvars <- scoreFrame %>%
   filter(code %in% c("clean", "lev")) %>%
   use_series(varName)
@@ -623,7 +617,7 @@ gb_all_train_treat <- prepare(treat_plan, gb_all_train, varRestriction = newvars
 gb_all_test_treat <- prepare(treat_plan, gb_all_test, varRestriction = newvars)
 ```
 
-### Use Cross-Validation to Determine Best Number of Trees
+### Use Cross-Validation to Optimize Number of Trees
 
 ``` r
 # Run xgb.cv cross validation on gb_all_train
@@ -643,57 +637,58 @@ eval_log
 ```
 
     ##    iter train_rmse_mean train_rmse_std test_rmse_mean test_rmse_std
-    ## 1     1           5.346        0.03145          5.351         0.163
-    ## 2     2           3.902        0.02317          3.921         0.158
-    ## 3     3           2.888        0.01748          2.924         0.142
-    ## 4     4           2.189        0.01872          2.241         0.132
-    ## 5     5           1.720        0.02385          1.791         0.139
-    ## 6     6           1.403        0.02352          1.486         0.144
-    ## 7     7           1.195        0.01928          1.295         0.148
-    ## 8     8           1.046        0.01437          1.166         0.140
-    ## 9     9           0.943        0.01990          1.087         0.139
-    ## 10   10           0.871        0.01445          1.036         0.140
-    ## 11   11           0.819        0.01167          0.995         0.137
-    ## 12   12           0.784        0.00891          0.970         0.139
-    ## 13   13           0.755        0.01258          0.946         0.127
-    ## 14   14           0.735        0.01582          0.933         0.121
-    ## 15   15           0.719        0.01775          0.921         0.118
-    ## 16   16           0.707        0.01965          0.916         0.119
-    ## 17   17           0.700        0.01784          0.912         0.120
-    ## 18   18           0.693        0.01806          0.911         0.121
-    ## 19   19           0.687        0.01779          0.911         0.122
-    ## 20   20           0.682        0.01777          0.910         0.124
-    ## 21   21           0.677        0.01733          0.908         0.122
-    ## 22   22           0.674        0.01888          0.906         0.123
-    ## 23   23           0.670        0.01876          0.906         0.121
-    ## 24   24           0.667        0.01842          0.905         0.123
-    ## 25   25           0.664        0.01815          0.905         0.123
-    ## 26   26           0.662        0.01804          0.905         0.123
-    ## 27   27           0.659        0.01781          0.906         0.122
-    ## 28   28           0.658        0.01776          0.906         0.120
-    ## 29   29           0.656        0.01812          0.907         0.120
-    ## 30   30           0.654        0.01795          0.907         0.118
-    ## 31   31           0.653        0.01783          0.907         0.117
-    ## 32   32           0.652        0.01805          0.907         0.117
-    ## 33   33           0.651        0.01812          0.906         0.116
-    ## 34   34           0.650        0.01804          0.907         0.116
-    ## 35   35           0.649        0.01831          0.906         0.115
+    ## 1     1           5.393        0.02247          5.392        0.0902
+    ## 2     2           3.919        0.01616          3.938        0.0404
+    ## 3     3           2.899        0.01096          2.942        0.0540
+    ## 4     4           2.200        0.00547          2.252        0.0648
+    ## 5     5           1.727        0.01276          1.806        0.0851
+    ## 6     6           1.409        0.01863          1.510        0.0948
+    ## 7     7           1.186        0.00630          1.315        0.0882
+    ## 8     8           1.042        0.01142          1.191        0.0870
+    ## 9     9           0.955        0.00872          1.109        0.0785
+    ## 10   10           0.877        0.00750          1.049        0.0710
+    ## 11   11           0.837        0.00858          1.017        0.0677
+    ## 12   12           0.801        0.00836          0.993        0.0650
+    ## 13   13           0.781        0.00807          0.975        0.0591
+    ## 14   14           0.763        0.00934          0.959        0.0535
+    ## 15   15           0.747        0.00982          0.952        0.0483
+    ## 16   16           0.734        0.00958          0.944        0.0418
+    ## 17   17           0.726        0.00998          0.939        0.0397
+    ## 18   18           0.718        0.01029          0.936        0.0383
+    ## 19   19           0.708        0.00878          0.929        0.0357
+    ## 20   20           0.699        0.00930          0.928        0.0393
+    ## 21   21           0.695        0.01027          0.925        0.0407
+    ## 22   22           0.690        0.01026          0.923        0.0412
+    ## 23   23           0.687        0.01011          0.922        0.0402
+    ## 24   24           0.684        0.00971          0.920        0.0413
+    ## 25   25           0.680        0.00848          0.917        0.0398
+    ## 26   26           0.678        0.00927          0.916        0.0406
+    ## 27   27           0.676        0.01006          0.918        0.0419
+    ## 28   28           0.673        0.01063          0.917        0.0416
+    ## 29   29           0.672        0.01052          0.917        0.0426
+    ## 30   30           0.670        0.01097          0.918        0.0456
+    ## 31   31           0.669        0.01103          0.919        0.0460
+    ## 32   32           0.667        0.01031          0.917        0.0463
+    ## 33   33           0.666        0.01072          0.919        0.0479
+    ## 34   34           0.665        0.01045          0.918        0.0482
+    ## 35   35           0.664        0.01062          0.918        0.0485
+    ## 36   36           0.663        0.01035          0.917        0.0490
 
 ``` r
-# Determine number of trees to minimize training and test error
+# Select number of trees to minimize training and test error, use std as tie breaker
 eval_log %>% 
   summarize(ntrees.train = which.min(train_rmse_mean), ntrees.test  = which.min(test_rmse_mean)) 
 ```
 
     ##   ntrees.train ntrees.test
-    ## 1           35          25
+    ## 1           36          26
 
 ### Fit Gradient Boost Model and Apply to Test Data
 
 ``` r
 gb_all_model <- xgboost(data = as.matrix(gb_all_train_treat),
                         label = gb_all_train$fsr,
-                        nrounds = 25,         # Enter number of trees from above
+                        nrounds = 26,         # Enter number of trees from above
                         objective = "reg:linear",
                         eta = 0.3,
                         depth = 6,
@@ -709,10 +704,104 @@ gb_all_test$pred <- predict(gb_all_model, as.matrix(gb_all_test_treat))
 
 ### Model r2 and RMSE
 
-    ## [1] 0.903
+At an r2 of 0.923 and an RMSE of 0.850, the gradient boost model outperforms the earlier random forest model. The gain curve plot below is virtually identical to the random forest performance as well.
 
-    ## [1] 0.95
+    ## [1] 0.923
+
+    ## [1] 0.85
 
 ### Gradient Boost Model Gain Curve Plot
 
 ![](07_Capstone_Report_files/figure-markdown_github/gb_gain_curve-1.png)
+
+### Assess Critical Variables to Gradient Boost Model
+
+The gradient boost model, using only law categories, far outperforms the manually created regression model. Critical variables will be evaluated using a blend of *gain* (increase in accuracy) and *cover* (number of trees effected) measures from the resulting importance table.
+
+    ##                  Feature    Gain   Cover Frequency gain_cover
+    ## 1                permith 0.45154 0.03427    0.0220   0.015474
+    ## 2       opencarrypermith 0.09712 0.03901    0.0242   0.003789
+    ## 3                capuses 0.09108 0.03154    0.0132   0.002873
+    ## 4               mayissue 0.05477 0.02582    0.0198   0.001414
+    ## 5                dealerh 0.03442 0.02286    0.0264   0.000787
+    ## 6      ccrenewbackground 0.01372 0.05443    0.0319   0.000747
+    ## 7        permitconcealed 0.02046 0.02928    0.0242   0.000599
+    ## 8                 felony 0.00855 0.05281    0.0352   0.000451
+    ## 9         recordsdealerh 0.02133 0.01954    0.0319   0.000417
+    ## 10      age18longgunsale 0.00866 0.04003    0.0308   0.000346
+    ## 11                 nosyg 0.00676 0.04646    0.0407   0.000314
+    ## 12 traffickingprohibited 0.02240 0.01312    0.0077   0.000294
+    ## 13              immunity 0.00942 0.03089    0.0396   0.000291
+    ## 14               college 0.00681 0.04179    0.0187   0.000285
+    ## 15      ccbackgroundnics 0.00908 0.02941    0.0407   0.000267
+    ## 16          alctreatment 0.00935 0.02851    0.0286   0.000267
+    ## 17       incidentremoval 0.01193 0.02100    0.0253   0.000251
+    ## 18            elementary 0.02546 0.00778    0.0242   0.000198
+    ## 19         invcommitment 0.00881 0.02232    0.0319   0.000197
+    ## 20   age18longgunpossess 0.00627 0.01903    0.0165   0.000119
+
+### Build Regression Model Using Top Variables from Gradient Boost
+
+A base regression model was created using the top ten "Gain X Cover" variables from the gradient boost model. Felony and age18longgunsale variables were removed due to lack of impact on model. The resulting regression model (below) accounted for 68.7% of variation in firearm suicide rate in the training data set.
+
+``` r
+gb_critical <- lm(fsr ~ permith + opencarrypermith + capuses + mayissue + dealerh +
+                  ccrenewbackground + permitconcealed + recordsdealerh, gb_all_train)
+summary(gb_critical)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = fsr ~ permith + opencarrypermith + capuses + mayissue + 
+    ##     dealerh + ccrenewbackground + permitconcealed + recordsdealerh, 
+    ##     data = gb_all_train)
+    ## 
+    ## Residuals:
+    ##    Min     1Q Median     3Q    Max 
+    ## -5.261 -1.028 -0.193  0.931  7.275 
+    ## 
+    ## Coefficients:
+    ##                   Estimate Std. Error t value             Pr(>|t|)    
+    ## (Intercept)         11.726      0.291   40.26 < 0.0000000000000002 ***
+    ## permith             -1.503      0.217   -6.91       0.000000000012 ***
+    ## opencarrypermith    -0.710      0.168   -4.22       0.000028607280 ***
+    ## capuses             -1.625      0.191   -8.51 < 0.0000000000000002 ***
+    ## mayissue            -1.261      0.217   -5.80       0.000000010800 ***
+    ## dealerh             -1.107      0.187   -5.92       0.000000005303 ***
+    ## ccrenewbackground   -0.934      0.164   -5.69       0.000000019460 ***
+    ## permitconcealed     -1.667      0.298   -5.59       0.000000034134 ***
+    ## recordsdealerh      -0.664      0.160   -4.15       0.000037850568 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 1.72 on 621 degrees of freedom
+    ## Multiple R-squared:  0.687,  Adjusted R-squared:  0.683 
+    ## F-statistic:  170 on 8 and 621 DF,  p-value: <0.0000000000000002
+
+### Apply Manual Regression Model to Test Data
+
+``` r
+gb_all_test$man_pred <- predict(gb_critical, gb_all_test)
+```
+
+### Evaluate Gradient Boost Based Manual Regression Model
+
+![](07_Capstone_Report_files/figure-markdown_github/gb_man_ggplot-1.png)
+
+### Manual Law Variable Model Performance
+
+The gradient boost inspired manual regression model accounts for 70.9% of the variation in FSR with an RMSE of 1.65. This performance was achieved using only eight individual law variables. The earlier regression model that included gun ownership and region West accounted for 77.0% of the variation in the FSR with an RMSE of 1.68.
+
+    ## [1] 0.709
+
+    ## [1] 1.65
+
+### Residual & Q-Q Plot for Manual Law Variable Regression
+
+The resulting residual and Q-Q plots reflect the same challenges that faced the previous regression model at the higher end values.
+
+![](07_Capstone_Report_files/figure-markdown_github/gb_man_resid_qq-1.png)
+
+### Manual Regression Model Based on Gradient Boost Gain Curve Plot
+
+![](07_Capstone_Report_files/figure-markdown_github/gb_man_gain_curve-1.png)

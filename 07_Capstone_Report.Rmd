@@ -1714,11 +1714,10 @@ Two methods were considered for dividing the train and test data. It was decided
 ```{r initial_test_train_split, echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
 
 # Split into train & test data sets at 70/30 ratio
-# gp <- runif(nrow(mach_data_df))
-# train_df <- mach_data_df[gp < 0.70, ]
-# test_df <- mach_data_df[gp >= 0.70, ]
-# dim(train_df)
-# dim(test_df)
+# set.seed(123) 
+# sample <- sample.int(n = nrow(mach_data_df), size = floor(0.70 * nrow(mach_data_df)), replace = F)
+# train_df <- mach_data_df[sample, ]
+# test_df  <- mach_data_df[-sample, ]
 
 # # Use 2013 as train and balance as test
 train_df <- mach_data_df %>% filter(year == 2013)
@@ -1747,14 +1746,17 @@ cor_df %>%
 ```
   
 ### Variable Selection Process  
+
 A review of the above table showed the high correlation levels for overall suicide (all_rate) as well as the siegel_rate and own_proxy each of which include the target variable within their derivation. While total laws (lawtotal) had a higher correlation than buyer regulations (buy_reg), the latter was selected as a more narrow and conservative option. Ownership rate (own_rate) was a clear variable choice from the outset as was population density (pop_density).  
 
 Among other law category variables, child access laws (child_acc), dealer regulations (deal_reg), preemption laws (pre_empt), background checks (bkgrnd_chk), domestic violence (dom_viol) and high-risk (high_risk) were all selected for consideration in the regression model. High colinearity between several of the law category variables posed issues in model development and was taken into account. All region variables were considered as well, both alone and in combination with other variables.  
 
 ### Selected Variables  
+
 __The most effective variables in combination were ownership rate, buyer regulations and region West.__ Several promising variables like population density and the regional variables for Mountain and Northeast performed well individually but failed to increase model performance significantly in combination with other independent variables.   
 
 ### Model Performance on Training Data  
+
 __The model accounted for 82.5% of the variation in the firearm suicide rate on the training data for 2013.__ Ownership rates have the largest effect but are also subject to a higher standard error. Buyer regulations contribute signifcantly to model accuracy with values of this variable ranging only from 0 to 15. The addition of region West added 3.0 percentage points to prediction accuracy. This modest increase exceeded that of any other region or combination of regions while also maitaining an acceptable signicance level. 
 
 ```{r base_train_model}
@@ -1768,6 +1770,7 @@ confint(mod2)
 ```
   
 ### Plug Prediction Back Into Training Data and Check r2 and RMSE  
+
 Testing predictions against observed values confirms the 0.825 r-squared value, with an RMSE of 1.38.
 
 ```{r base_train_r2_rmse}
@@ -1778,7 +1781,9 @@ sqrt(mean((train_df$predict - train_df$gun_rate)^2))
 ```
 
 ### Check Model Residuals vs Fitted and Q-Q Plots  
-The residual and Q-Q plots indicate reasonable distribution of model error, although the data starts to skew above expected levels at higher values.
+
+The residual and Q-Q plots indicate reasonable distribution of model error, although the data starts to skew above expected levels at higher values.  
+
 ```{r base_train_resid_qq}
 # Residual & Q-Q Plot code from linear regression exercise
 par(mar = c(4, 4, 2, 2), mfrow = c(1, 2))
@@ -1795,6 +1800,7 @@ train_df[c(2, 36, 47), c("year", "state", "predict", "gun_rate", "own_rate", "bu
 ## Apply Regression Model to Test Data  
 
 ### Model Performance on Test Data  
+
 Model performance declined from the initial training data, but this was largely expected given the significant size discrepancy between the training set and the test set. __The model accounted for 77.3% of the variation in the test data set.__ The coefficient estimate for the ownership rate dropped but so did the standard error and the t-value, a likely result of the larger data set. The impact of region West increased as did its level of significance. The confidence interval table reflects a much tighter range of values.  
 
 ```{r base_test_model}
@@ -1805,6 +1811,7 @@ confint(test2)
 ```
 
 ### Plug Prediction Back Into Test Data and Check r2 and RMSE  
+
 Checking the prediction values against the target value confirms the 0.77 r-squared value compared to the 0.825 from the training data. The RMSE rose from 1.38 to 1.68. This shift is not surprising given fixed 2013 ownership rates, values that ideally would change year-to-year were the data available. Another element impacting accuracy could be the increase in FSR levels from 2008 to 2016. This rise would have been captured by the 2013 training data, but it would weaken model perofrmance in years prior to 2008.  
 
 ```{r base_test_r2_rmse}
@@ -1814,8 +1821,10 @@ cor(test_df$predict, test_df$gun_rate)^2
 sqrt(mean((test_df$predict - test_df$gun_rate)^2))
 ```
 
-### Check Residuals vs Fitted and Q-Q Plots 
-The Residual vs Fitted plots is more balanced compared to the training data as one would expect given the much larger data set. Still, both the residual and Q-Q plots confirm the skewing of observed values at higher FSR levels.
+### Check Residuals vs Fitted and Q-Q Plots  
+
+The Residual vs Fitted plots is more balanced compared to the training data as one would expect given the much larger data set. Still, both the residual and Q-Q plots confirm the skewing of observed values at higher FSR levels.  
+
 ```{r base_test_resid_qq}
 # Residual & Q-Q Plot
 par(mar = c(4, 4, 2, 2), mfrow = c(1, 2))
@@ -1875,15 +1884,16 @@ outcome <- c("gun_rate")
 var_names <- law_cats
 
 # Split into train & test data sets at 70/30 ratio
-gp <- runif(nrow(rf_data_df))
-rf_train <- rf_data_df[gp < 0.70, ]
-rf_test <- rf_data_df[gp >= 0.70, ]
+set.seed(123) 
+sample <- sample.int(n = nrow(rf_data_df), size = floor(0.70 * nrow(rf_data_df)), replace = F)
+rf_train <- rf_data_df[sample, ]
+rf_test  <- rf_data_df[-sample, ]
 
 ```
 
 ### Create Formula and Fit Model  
 
-Model r2 and RMSE equivalent (Out of Basket Prediction Error) are displayed below.
+Model r2 of 0.88 and RMSE equivalent (Out of Basket Prediction Error) of 1.12 on the training data represent a major improvement on the previous manual regression model.  
 
 ```{r rf_model_fit, echo=TRUE}
 # Create formula
@@ -1900,9 +1910,9 @@ model_rf
   
 ### Apply Law Category Model to Test Data  
 
-Resulting r2 and RMSE are displayed below. The plot illustrates the tight grouping of values along the perfect correlation line. FSR at levels at or above 12 still prove difficult to predict. 
+Resulting r2  of 0.904 and RMSE of 0.945 actually improve upon performance against the training data. The plot below illustrates the tight grouping of values along the ideal correlation line. FSR levels at or above 12 still prove difficult to predict. 
 
-```{r rf_test_results, echo=TRUE}
+```{r rf_test_results}
 rf_test$predict <- predict(model_rf, rf_test)$predictions
 
 cor(rf_test$gun_rate, rf_test$predict)^2
@@ -1934,16 +1944,16 @@ GainCurvePlot(rf_test, "predict", "gun_rate", "Random Forest Law Category Model"
 
 ### Conclusions from Random Forest Model Performance  
 
-In the source R-code available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R), a second random forest model is run using individual law variables with slightly higher performance levels. Both of these models suggest that specific legislation classes offer the possibility of impacting firearm suicide rates. Based upon this finding, gradient boost models will be utilized to identify the critical law categories and laws of most interest to legislators and public health professionals. 
+In the source R-code available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/04_mach_learn.R), a second random forest model is run using individual law variables with slightly higher performance levels. Both of these models suggest that specific legislation classes offer the possibility of impacting firearm suicide rates. Based upon this finding, gradient boost models will be utilized to identify the critical law categories and individual laws of most interest to legislators and public health professionals. 
 
 
 ## Gradient Boost Modeling to Identify Critical Law Variables  
 
-Gradient boost modeling offers the performance benefits of random forest models with the added benefit of getting to __peak under the hood to view the variables of greatest imapct__ to the model. With that in mind, a model will be created utilizing all 132 law variables to assess those most likely to be predictive of a state's firearm suicide rate. It follows that these laws could have the greatest potential effect in reducing firearm suicides. 
+Gradient boost modeling offers the performance benefits of random forest models with the added benefit of getting to peak under the hood to view the variables of greatest impact to the model. With that in mind, a model will be created utilizing all 132 law variables to assess those most likely to be predictive of a state's firearm suicide rate. It follows that these laws could have the greatest potential effect in reducing firearm suicides. 
 
 ### Preliminary Gradient Boost Models  
 
-In the interest of limitations of time and space, only one gradient boost model utilizing all 132 law variables will be presented here. However, the [source R-code]() includes preliminary models that first assessed the 14 law category variables and then investigated the individual laws within those categories. This process found significant overlap between the final 132-variable model and the preliminary models.  
+In light of limitations of time and space, only one gradient boost model utilizing all 132 law variables will be presented here. However, the [source R-code]() includes preliminary models that first assessed the 14 law category variables and then investigated the individual laws within those categories. This process found significant overlap between the final 132-variable model and the preliminary models.  
 
 ### Create Table and Split Into Train and Test Data Sets  
 
@@ -1955,15 +1965,17 @@ gb_all_df <- sui_method_df %>%
   left_join(state_laws_df, by = join_key) %>%
   select(state, year, fsr, c(law_vars))
 
-
 # Split into train & test data sets at 70/30 ratio
-gp <- runif(nrow(gb_all_df))
-gb_all_train <- gb_all_df[gp < 0.70, ]
-gb_all_test <- gb_all_df[gp >= 0.70, ]
+set.seed(123) 
+sample <- sample.int(n = nrow(gb_all_df), size = floor(0.70 * nrow(gb_all_df)), replace = F)
+gb_all_train <- gb_all_df[sample, ]
+gb_all_test  <- gb_all_df[-sample, ]
+
 ```
 
 ### Treat Data for Use with xgboost Package  
-The xgboost package requires that all variables be numeric so the "treatment plan" using the vtreat package performs all the ncessary conversions. This data set did not include any categorical variables, but vtreat would address those items as well if they existed.  
+
+The xgboost package requires that all variables be numeric. The "treatment plan" below uses the vtreat package to make all necessary conversions. This data set did not include any categorical variables, but vtreat would address those items as well if they existed.  
 
 ```{r gb_treat_hide, include=FALSE}
 treat_plan <- designTreatmentsZ(gb_all_train, law_vars)
@@ -1973,14 +1985,14 @@ treat_plan <- designTreatmentsZ(gb_all_train, law_vars)
 ```{r gb_treat, echo=TRUE}
 # Create the treatment plan
 # treat_plan <- designTreatmentsZ(gb_all_train, law_vars)
-# Line above commented out to prevent large output, run above w/o displaying
+# Line above commented out to prevent large output, run w/o displaying
 
-# Examine scoreFrame
+# Create scoreFrame
 scoreFrame <- treat_plan %>%
   use_series(scoreFrame) %>%
   select(varName, origName, code)
 
-# We only want the rows with codes "clean" or "lev"
+# Retain rows with "clean" and "lev"
 newvars <- scoreFrame %>%
   filter(code %in% c("clean", "lev")) %>%
   use_series(varName)
@@ -1992,7 +2004,7 @@ gb_all_train_treat <- prepare(treat_plan, gb_all_train, varRestriction = newvars
 gb_all_test_treat <- prepare(treat_plan, gb_all_test, varRestriction = newvars)
 ```
   
-### Use Cross-Validation to Determine Best Number of Trees  
+### Use Cross-Validation to Optimize Number of Trees  
 
 ```{r cv_tree_cnt, echo=TRUE}
 # Run xgb.cv cross validation on gb_all_train
@@ -2010,7 +2022,7 @@ gb_all_cv <- xgb.cv(data = as.matrix(gb_all_train_treat),
 eval_log <- as.data.frame(gb_all_cv$evaluation_log)
 eval_log
 
-# Determine number of trees to minimize training and test error
+# Select number of trees to minimize training and test error, use std as tie breaker
 eval_log %>% 
   summarize(ntrees.train = which.min(train_rmse_mean), ntrees.test  = which.min(test_rmse_mean)) 
 ```
@@ -2020,7 +2032,7 @@ eval_log %>%
 ```{r gb_fit_apply, echo=TRUE}
 gb_all_model <- xgboost(data = as.matrix(gb_all_train_treat),
                         label = gb_all_train$fsr,
-                        nrounds = 25,         # Enter number of trees from above
+                        nrounds = 26,         # Enter number of trees from above
                         objective = "reg:linear",
                         eta = 0.3,
                         depth = 6,
@@ -2031,6 +2043,7 @@ gb_all_test$pred <- predict(gb_all_model, as.matrix(gb_all_test_treat))
 ```
 
 ### Evaluate Gradient Boost Model Performance  
+
 ```{r gb_ggplot}
 gb_all_test %>%
   left_join(regions_df, by = "state") %>%
@@ -2049,6 +2062,9 @@ gb_all_test %>%
 ```
 
 ### Model r2 and RMSE  
+
+At an r2 of 0.923 and an RMSE of 0.850, the gradient boost model outperforms the earlier random forest model. The gain curve plot below is virtually identical to the random forest performance as well.     
+
 ```{r gb_eval, echo=FALSE}
 
 # Check r2 and RMSE
@@ -2057,7 +2073,86 @@ sqrt(mean((gb_all_test$pred - gb_all_test$fsr)^2))
 ```
 
 ### Gradient Boost Model Gain Curve Plot  
+
 ```{r gb_gain_curve}
 GainCurvePlot(gb_all_test, "pred", "fsr", "Gradient Boost Model")
+```
+
+### Assess Critical Variables to Gradient Boost Model  
+
+The gradient boost model, using only law categories, far outperforms the manually created regression model. Critical variables will be evaluated using a blend of _gain_ (increase in accuracy) and _cover_ (number of trees effected) measures from the resulting importance table.   
+
+```{r gb_impt_tbl}
+
+importance_table <- xgb.importance(feature_names = law_vars, model = gb_all_model)
+importance_table %>%
+  mutate(gain_cover = Gain * Cover) %>%
+  arrange(desc(gain_cover)) %>%
+  head(n = 20)
+
+```
+
+### Build Regression Model Using Top Variables from Gradient Boost  
+
+A base regression model was created using the top ten "Gain X Cover" variables from the gradient boost model. Felony and age18longgunsale variables were removed due to lack of impact on model. The resulting regression model (below) accounted for 68.7% of variation in firearm suicide rate in the training data set.  
+
+```{r gb_man_model, echo=TRUE}
+
+gb_critical <- lm(fsr ~ permith + opencarrypermith + capuses + mayissue + dealerh +
+                  ccrenewbackground + permitconcealed + recordsdealerh, gb_all_train)
+summary(gb_critical)
+```
+
+### Apply Manual Regression Model to Test Data  
+
+```{r gb_man_test, echo=TRUE}
+gb_all_test$man_pred <- predict(gb_critical, gb_all_test)
+```
+
+### Evaluate Gradient Boost Based Manual Regression Model  
+
+```{r gb_man_ggplot}
+gb_all_test %>%
+  left_join(regions_df, by = "state") %>%
+  ggplot(aes(x = man_pred, y = fsr, color = region, label = usps_st)) + 
+  geom_text() + 
+  geom_abline() +  
+  expand_limits(y = 0, x = 0) +
+  ylab("Actual Observed Firearm Suicide Rate") +
+  xlab("Predicted Firearm Suicide Rate") +
+  labs(color = "Region Code") +
+  labs(title = "Manual Regression Based Upon Gradient Boost Results", 
+       subtitle = "Predicted FSR Levels vs Observed FSR Levels") +
+  labs(caption = "Predictions of FSR based upon top eight rated law variables") +
+  theme(legend.position = "right")
+
+```
+
+
+### Manual Law Variable Model Performance  
+
+The gradient boost inspired manual regression model accounts for 70.9% of the variation in FSR with an RMSE of 1.65. This performance was achieved using only eight individual law variables. The earlier regression model that included gun ownership and region West accounted for 77.0% of the variation in the FSR with an RMSE of 1.68.  
+
+```{r man_gb_r2_rmse}
+cor(gb_all_test$man_pred, gb_all_test$fsr)^2
+sqrt(mean((gb_all_test$man_pred - gb_all_test$fsr)^2))
+```
+
+### Residual & Q-Q Plot for Manual Law Variable Regression  
+
+The resulting residual and Q-Q plots reflect the same challenges that faced the previous regression model at the higher end values.
+
+```{r gb_man_resid_qq}
+# Residual & Q-Q Plot
+man_tst <- lm(gb_critical, gb_all_test)
+par(mar = c(4, 4, 2, 2), mfrow = c(1, 2))
+plot(man_tst, which = c(1, 2))
+```
+
+
+### Manual Regression Model Based on Gradient Boost Gain Curve Plot  
+
+```{r gb_man_gain_curve}
+GainCurvePlot(gb_all_test, "man_pred", "fsr", "Gradient Boost TOP 8 Manual Regression Model")
 ```
 
