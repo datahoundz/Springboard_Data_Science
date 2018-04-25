@@ -549,6 +549,8 @@ Resulting r2 of 0.904 and RMSE of 0.945 actually improve upon performance agains
 
     ## [1] 0.945
 
+### Random Forest Predictions vs Actual Observed FSR
+
 ![](07_Capstone_Report_files/figure-markdown_github/rf_ggplot_test-1.png)
 
 ### Gain Curve Plot of Random Forest Performance

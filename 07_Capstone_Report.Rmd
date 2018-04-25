@@ -1915,6 +1915,8 @@ cor(rf_test$gun_rate, rf_test$predict)^2
 sqrt(mean((rf_test$predict - rf_test$gun_rate)^2))
 ```
 
+### Random Forest Predictions vs Actual Observed FSR
+
 ```{r rf_ggplot_test}
 
 ggplot(rf_test, aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
