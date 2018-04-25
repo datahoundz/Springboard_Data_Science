@@ -32,7 +32,7 @@ Best States for Gun Owners?
 
 - Guns & Ammo state rankings find curious correlation
 - MT ranked 11th by G&A, 1st in gun suicides
-- MA ranked 48th by G&A, 50th in sun suicides
+- MA ranked 48th by G&A, 50th in gun suicides
 - What exactly does "Best for Gun Owners" mean?
 
 
@@ -48,7 +48,7 @@ Suicide Takes More Lives, Getting Worse
 - Firearm homicides spiking recently
 
 
-Rural States Face Starkest Problem
+Firearm Suicide Minus Firearm Homicide
 ========================================================
 
 ![fsr_minus_hsr](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/fsr_minus_hsr-1.png)
@@ -58,3 +58,106 @@ Rural States Face Starkest Problem
 - Firearm suicide rate 2X homicide rate on average
 - Disparity greater in rural states
 - Only six states w/ higher homicide rate
+
+
+Suicide Rates Higher in Rural States
+========================================================
+
+![osr_by_pop_density](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/osr_by_pop_density-1.png)
+
+***
+
+- Sparsely populated states face higher suicides
+- Mountain states experience most extreme levels
+- Similar Plains states all well below Mountain rates
+- Northeast posts lowest suicide rates
+
+
+Regional Variations in Suicide Modality
+========================================================
+
+![Regional Suicide Profiles](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/reg_sui_method-1.png)
+
+***
+
+- Firearm suicide rate (FSR) lower and trendline flatter in Northeast and Pacific
+- FSR sharply higher and rising in South and Mountain regions
+
+
+
+Rural vs Urban Divide within Regions
+========================================================
+
+![State Suicide Profiles](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/state_sui_method-1.png)
+
+***
+
+- Massachusetts vs Maine
+- New York vs Pensylvania
+- Illinois vs Indiana
+- Texas vs Oklahoma
+- California vs Oregon
+
+
+Guns Associated with Higher Overall Suicides
+========================================================
+
+- Since 1999, guns accounted for 58% of deaths in states with above average suicides
+- They account for 48% of deaths in below average states
+
+
+More Guns, More Gun Suicides
+========================================================
+
+![own_fsr_plot](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/own_fsr_plot-1.png)
+
+***
+
+- Ownership rates strongly correlated with FSR
+- Correlation of 0.748 and r-squared of 0.559
+- Divide between rural and urban apparent again
+
+
+Mapping Gun Ownership and FSR Levels
+========================================================
+
+![own_rate_map](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/own_rate_map-1.png)
+
+***
+
+![fsr_rate_map](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/fsr_map-1.png)
+
+
+Ownership Tier and Firearm Suicide Rates
+========================================================
+
+![fsr_own_tier](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/fsr_own_tier-1.png)
+
+***
+
+- High ownership tier has 12 of 13 highest FSR states
+- Low ownership tier has 11 0f 13 lowest rates
+- Hawaii data likely incorrect (see full report)
+
+
+Gun Law Grades and Gun Deaths
+========================================================
+
+![giff_grd_gun_dth_rnk](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/giff_grd_gun_dth_rnk-1.png)
+
+- The 20 lowest ranked states dominated by "F" grades
+- States with A-B grades boast lowest gun deaths
+- Similar relationship for firearm suicides
+
+
+Mapping Giffords Grade and FSR Levels
+========================================================
+
+![giff_grd_map](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/giff_grd_map-1.png)
+
+***
+
+![fsr_rate_map](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/fsr_map-1.png)
+
+
+
