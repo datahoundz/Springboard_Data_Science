@@ -796,7 +796,7 @@ hljs.initHighlightingOnLoad();
 <div class="slideContent" >
 <ul>
 <li>Shed light on hidden issue of firearm suicide</li>
-<li>Frame issue relative to homicide deaths</li>
+<li>Frame issue relative to homicide deaths and overall suicide</li>
 <li>Explore potential impact of region, laws and ownership rates</li>
 <li>Develop regression model to predict gun suicides</li>
 <li>Use modeling to assess critical gun law interventions</li>
@@ -845,7 +845,7 @@ hljs.initHighlightingOnLoad();
 <div class="slideContent" >
 <ul>
 <li>Firearm suicide takes more lives than homicide</li>
-<li>Vast majority states face far higher rates of firearm suicide</li>
+<li>Vast majority of states face far higher firearm suicide rates </li>
 <li>Suicide is more critical problem in rural states</li>
 <li>Suicide methods and trends vary across regions</li>
 <li>Within regions, gun suicides drive higher rates in rural states</li>
@@ -970,7 +970,7 @@ hljs.initHighlightingOnLoad();
 
 </section>
 <section data-transition="linear" data-transition-speed="default">
-<h3>Gun Ownership Rates and Firearm Suicides</h3>
+<h3>Gun Ownership and Firearm Suicides</h3>
 <div class="slideContent" >
 <ul>
 <li>Gun ownership data from 2013 Kalesan survey</li>
@@ -1109,8 +1109,141 @@ hljs.initHighlightingOnLoad();
 
 </section>
 <section data-transition="linear" data-transition-speed="default">
-<h3>Stronger Gun Laws, Fewer Firearm Suicides</h3>
+<h3>Strong Laws, Fewer Firearm Suicides</h3>
 <div class="slideContent" >
+<ul>
+<li>Gun regulation varies widely by state and region</li>
+<li>Increased regulation largely limited to coastal states</li>
+<li>Strong relation between regulation and firearm suicides</li>
+<li>Reduced gun laws, increased FSR deaths</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Gun Regulation Varies by State &amp; Region</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/law_state_plots-1.png" alt="law_state_plots"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Number of laws and trends wildly disparate</li>
+<li>Variation mirrors rural-urban divide within regions</li>
+<li>Northeast has strongest gun laws nationally</li>
+<li>Maine &amp; Vermont laws closer to South or Mountain West </li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Increased Regulation on Coasts</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/law_net_chg-1.png" alt="law_net_chg"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<p>Gun Law Changes 1999-2016</p>
+
+<ul>
+<li>Significantly increased regulation (10+ laws) in only 12 states</li>
+<li>Increases concentrated on East and West coasts</li>
+<li>Laws decreased in 18 states across South, Midwest and West</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Laws Strong Indicator of FSR Level</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/laws_vs_fsr_all-1.png" alt="laws_vs_fsr_all"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Number of laws explains 61.7% of variation in state FSR levels</li>
+<li>High regulation coastal states have far lower FSRs</li>
+<li>Western states dominate the low regulation, high FSR corner</li>
+<li>Plot presents reversed mirror image of earlier ownership plot </li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Relationship Stronger at Regional Level</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/laws_vs_fsr_reg-1.png" alt="laws_vs_fsr_reg"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Regional plots call out rural vs urban divde once more</li>
+<li>R-squared values markedly higher by region</li>
+<li>AK, WY, MT remain unfortunate outliers at top of FSR range</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Reduced Gun Laws, Increased FSR Deaths</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/law_chg_fsr_chg-1.png" alt="law_chg_fsr_chg"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Reduced gun law states averaged 2.42 increase in FSR</li>
+<li>Large increase states (10+ laws) saw only 0.47 increase</li>
+<li>5X difference in FSR change between two groups</li>
+<li>Changes occur as overall suicide rates rise across nation</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Select State Comparisons</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/ca_mo_plot-1.png" alt="ca_mo_plot"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>California +33 gun laws, FSR fell 0.5/100K</li>
+<li>Missouri -10 gun laws, FSR rose by 3.0/100K</li>
+<li>Estimated 176 more Missouri suicides in 2016</li>
+<li>Estimated 183 lives saved in California</li>
+<li>39 saved lives in NY, 151 more SC deaths</li>
+</ul>
 
 </div>
 

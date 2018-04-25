@@ -7,7 +7,7 @@ autosize: true
 Overview
 ========================================================
 - Shed light on hidden issue of firearm suicide
-- Frame issue relative to homicide deaths
+- Frame issue relative to homicide deaths and overall suicide
 - Explore potential impact of region, laws and ownership rates
 - Develop regression model to predict gun suicides
 - Use modeling to assess critical gun law interventions
@@ -40,7 +40,7 @@ Firearm Suicide as Target of Study
 ========================================================
 
 - Firearm suicide takes more lives than homicide
-- Vast majority states face far higher rates of firearm suicide
+- Vast majority of states face far higher firearm suicide rates 
 - Suicide is more critical problem in rural states
 - Suicide methods and trends vary across regions
 - Within regions, gun suicides drive higher rates in rural states
@@ -118,7 +118,7 @@ Guns Drive Above Average Suicide Rates
 - In three highest rate states, guns are used in 63%-65% of suicides
 
 
-Gun Ownership Rates and Firearm Suicides
+Gun Ownership and Firearm Suicides
 ========================================================
 
 - Gun ownership data from 2013 Kalesan survey
@@ -205,7 +205,93 @@ Giffords F and Overall Suicide Rates
 - 20 "F" states above average
 
 
-Stronger Gun Laws, Fewer Firearm Suicides
+Strong Laws, Fewer Firearm Suicides
 ========================================================
+
+- Gun regulation varies widely by state and region
+- Increased regulation largely limited to coastal states
+- Strong relation between regulation and firearm suicides
+- Reduced gun laws, increased FSR deaths
+
+
+Gun Regulation Varies by State & Region
+========================================================
+
+![law_state_plots](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/law_state_plots-1.png)
+
+***
+
+- Number of laws and trends wildly disparate
+- Variation mirrors rural-urban divide within regions
+- Northeast has strongest gun laws nationally
+- Maine & Vermont laws closer to South or Mountain West 
+
+Increased Regulation on Coasts
+========================================================
+
+![law_net_chg](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/law_net_chg-1.png)
+
+***
+
+Gun Law Changes 1999-2016
+- Significantly increased regulation (10+ laws) in only 12 states
+- Increases concentrated on East and West coasts
+- Laws decreased in 18 states across South, Midwest and West
+
+
+Laws Strong Indicator of FSR Level
+========================================================
+
+![laws_vs_fsr_all](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/laws_vs_fsr_all-1.png)
+
+***
+
+- Number of laws explains 61.7% of variation in state FSR levels
+- High regulation coastal states have far lower FSRs
+- Western states dominate the low regulation, high FSR corner
+- Plot presents reversed mirror image of earlier ownership plot 
+
+
+Relationship Stronger at Regional Level
+========================================================
+
+![laws_vs_fsr_reg](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/laws_vs_fsr_reg-1.png)
+
+***
+
+- Regional plots call out rural vs urban divde once more
+- R-squared values markedly higher by region
+- AK, WY, MT remain unfortunate outliers at top of FSR range
+
+
+Reduced Gun Laws, Increased FSR Deaths
+========================================================
+
+![law_chg_fsr_chg](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/law_chg_fsr_chg-1.png)
+
+***
+
+- Reduced gun law states averaged 2.42 increase in FSR
+- Large increase states (10+ laws) saw only 0.47 increase
+- 5X difference in FSR change between two groups
+- Changes occur as overall suicide rates rise across nation
+
+
+Select State Comparisons
+========================================================
+
+![ca_mo_plot](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/ca_mo_plot-1.png)
+
+***
+
+- California +33 gun laws, FSR fell 0.5/100K
+- Missouri -10 gun laws, FSR rose by 3.0/100K
+- Estimated 176 more Missouri suicides in 2016
+- Estimated 183 lives saved in California
+- 39 saved lives in NY, 151 more SC deaths
+
+
+
+
 
 
