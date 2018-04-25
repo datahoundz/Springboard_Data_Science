@@ -36,6 +36,16 @@ Best States for Gun Owners?
 - What exactly does "Best for Gun Owners" mean?
 
 
+Firearm Suicide as Target of Study
+========================================================
+
+- Firearm suicide takes more lives than homicide
+- Vast majority states face far higher rates of firearm suicide
+- Suicide is more critical problem in rural states
+- Suicide methods and trends vary across regions
+- Within regions, gun suicides drive higher rates in rural states
+
+
 Suicide Takes More Lives, Getting Worse
 ========================================================
 
@@ -99,11 +109,22 @@ Rural vs Urban Divide within Regions
 - California vs Oregon
 
 
-Guns Associated with Higher Overall Suicides
+Guns Drive Above Average Suicide Rates
 ========================================================
 
 - Since 1999, guns accounted for 58% of deaths in states with above average suicides
 - They account for 48% of deaths in below average states
+- In three lowest suicide rate states, guns account for 22%-32% of deaths
+- In three highest rate states, guns are used in 63%-65% of suicides
+
+
+Gun Ownership Rates and Firearm Suicides
+========================================================
+
+- Gun ownership data from 2013 Kalesan survey
+- Strong relation between higher gun ownership and higher suicide rates
+- Regional and rural/urban variations are evident
+- Ownership data for one year only limits analysis
 
 
 More Guns, More Gun Suicides
@@ -140,6 +161,15 @@ Ownership Tier and Firearm Suicide Rates
 - Hawaii data likely incorrect (see full report)
 
 
+Giffords Gun Law Grades
+========================================================
+
+- Giffords Law Center Data for 2014-2016
+- Grades & Rankings show relation between weak laws and gun deaths
+- Gun law rankings also display relation with firearm suicide rates
+- Data limited to three years impacting deeper exploration
+
+
 Giffords Grades and Gun Deaths
 ========================================================
 
@@ -153,7 +183,7 @@ Giffords Grades and Gun Deaths
 - Similar relationship for firearm suicides
 
 
-Mapping Giffords Grade and FSR Levels
+Mapping Giffords Grades and FSR Levels
 ========================================================
 
 ![giff_grd_map](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/giff_grd_map-1.png)
@@ -174,5 +204,8 @@ Giffords F and Overall Suicide Rates
 - 21 "Non-F" states below average
 - 20 "F" states above average
 
+
+Stronger Gun Laws, Fewer Firearm Suicides
+========================================================
 
 
