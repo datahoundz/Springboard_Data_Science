@@ -140,12 +140,15 @@ Ownership Tier and Firearm Suicide Rates
 - Hawaii data likely incorrect (see full report)
 
 
-Gun Law Grades and Gun Deaths
+Giffords Grades and Gun Deaths
 ========================================================
 
 ![giff_grd_gun_dth_rnk](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/giff_grd_gun_dth_rnk-1.png)
 
-- The 20 lowest ranked states dominated by "F" grades
+***
+
+- Half of states receive gun law grade of "F"
+- Worst gun death ranks dominated by "F" states
 - States with A-B grades boast lowest gun deaths
 - Similar relationship for firearm suicides
 
@@ -158,6 +161,18 @@ Mapping Giffords Grade and FSR Levels
 ***
 
 ![fsr_rate_map](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/fsr_map-1.png)
+
+
+Giffords F and Overall Suicide Rates
+========================================================
+
+![osr_by_f_grade](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/osr_by_f_grade-1.png)
+
+***
+
+- 41 Above/Below Average rankings indicated by Giffords "F"
+- 21 "Non-F" states below average
+- 20 "F" states above average
 
 
 
