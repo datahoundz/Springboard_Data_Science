@@ -341,7 +341,7 @@ Model Performance on Test Data
 - Variation at high end of FSR range difficult to predict
 
 
-Random Forest Model: Law Categories Only
+Random Forest: Law Categories Only
 ========================================================
 
 - Random Forest machine learning technique for higher accuracy
