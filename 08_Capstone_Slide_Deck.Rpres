@@ -10,7 +10,7 @@ Overview
 - Frame issue relative to homicide deaths and overall suicide
 - Explore potential impact of region, laws and ownership rates
 - Develop regression model to predict gun suicides
-- Use modeling to assess critical gun law interventions
+- Use machine learning to assess critical gun law interventions
 
 
 The Problem
@@ -55,7 +55,7 @@ Suicide Takes More Lives, Getting Worse
 
 - Firearm suicides historically outpace homicides
 - Sharp and steady rise in suicides since 2008
-- Firearm homicides spiking recently
+- Firearm homicides more stable but spiking recently
 
 
 Firearm Suicide Minus Firearm Homicide
@@ -102,6 +102,7 @@ Rural vs Urban Divide within Regions
 
 ***
 
+Examples of Regional Divide
 - Massachusetts vs Maine
 - New York vs Pensylvania
 - Illinois vs Indiana
@@ -165,8 +166,8 @@ Giffords Gun Law Grades
 ========================================================
 
 - Giffords Law Center Data for 2014-2016
-- Grades & Rankings show relation between weak laws and gun deaths
-- Gun law rankings also display relation with firearm suicide rates
+- Ratings show relation between weak laws and gun deaths
+- Rankings also display relation with firearm suicide rates
 - Data limited to three years impacting deeper exploration
 
 
@@ -193,7 +194,7 @@ Mapping Giffords Grades and FSR Levels
 ![fsr_rate_map](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/fsr_map-1.png)
 
 
-Giffords F and Overall Suicide Rates
+F-Grade and Overall Suicide Rates
 ========================================================
 
 ![osr_by_f_grade](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/osr_by_f_grade-1.png)
@@ -203,6 +204,7 @@ Giffords F and Overall Suicide Rates
 - 41 Above/Below Average rankings indicated by Giffords "F"
 - 21 "Non-F" states below average
 - 20 "F" states above average
+- Clear prevalence of gun suicides in above average states
 
 
 Strong Laws, Fewer Firearm Suicides
@@ -274,7 +276,17 @@ Reduced Gun Laws, Increased FSR Deaths
 - Reduced gun law states averaged 2.42 increase in FSR
 - Large increase states (10+ laws) saw only 0.47 increase
 - 5X difference in FSR change between two groups
-- Changes occur as overall suicide rates rise across nation
+- Changes occur amid rise in national suicide rates
+
+
+Mapping Law Change to FSR Change
+========================================================
+
+![map_law_chg](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/map_law_chg.png)
+
+***
+
+![map_fsr_chg](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/map_fsr_chg.png)
 
 
 Select State Comparisons
@@ -288,10 +300,150 @@ Select State Comparisons
 - Missouri -10 gun laws, FSR rose by 3.0/100K
 - Estimated 176 more Missouri suicides in 2016
 - Estimated 183 lives saved in California
-- 39 saved lives in NY, 151 more SC deaths
+- NY: 39 saved lives, SC: 151 more deaths
 
 
+Regression Model to Predict State FSR
+========================================================
+
+VARIABLES OF INTEREST
+- Gun Ownership Rate
+- Firearm Laws
+- Region
+- Population Density
+
+POTENTIAL ISSUES
+- Colinearity between variables
+- Only one year of ownership rates
+- Rising suicide rate 
 
 
+Training Data - 2013 Data Only
+========================================================
+- Ownership rate, buyer regulation laws and region West most effective variables
+- Ownership rate has greatest impact on model performance but high error range
+- Buyer regulations law category more conservative choice over total laws
+- Population density strong predictor in isolation, not in combination
+- Region = West outperformed all other regional variable options
+- Model predicted 82.5% of variation in FSR on the 2013 training data
 
 
+Model Performance on Test Data
+========================================================
+
+![man_reg_ggplot](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/man_reg_ggplot.png)
+
+***
+
+- Model accounted for 77.3% of FSR variation in test data
+- RMSE of 1.68 improved on train data performance
+- Significant size difference in datasets likely cause of shifts
+- Variation at high end of FSR range difficult to predict
+
+
+Random Forest Model: Law Categories Only
+========================================================
+
+- Random Forest machine learning technique for higher accuracy
+- Inability to see how model achieves improved performance
+- Run to explore possibility of using only law variables
+- Higher risk of overfitting model to training data
+- Train with 70% of data, test on 30%
+
+
+Random Forest Model Performance
+========================================================
+
+![rf_ggplot_test](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/rf_ggplot_test-1.png)
+
+***
+
+- Random Forest model outperformed manual regression
+- Used only 14 law category variables
+- Accounted for 90.4% of FSR variation
+- RMSE of only 0.945
+
+
+Gradient Boost Model: All Law Variables
+========================================================
+
+- Gradient Boost machine learning technique similar to Random Forest
+- Allows one to glimpse variable impact
+- Apply using 132 individual law variables
+- Assess law variables most likely to effect FSR levels
+- Repeat 70/30 training vs test data split
+
+
+Gradient Boost Model Performance
+========================================================
+
+![gb_ggplot](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/gb_ggplot-1.png)
+
+***
+
+- Outperformed Random Forest law category model
+- Accounted for 92.3% of variation in FSR
+- RMSE even lower at 0.85
+
+
+Critical Variables in Model
+========================================================
+
+![crit_var_ggplot](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/crit_var_ggplot.png)
+
+***
+
+- Plot displays critical variables ranked by gain x cover
+- Gain indicates improvement in model accuracy
+- Cover indicates number of branches effected
+- permith clearly stands out in ranking
+- permith: A license or permit is required to purchase handguns
+
+
+Manual Regression Using Critical Laws
+========================================================
+
+![gb_man_ggplot](https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/gb_man_ggplot-1.png)
+
+***
+
+- Built manual regression model using critical law variables
+- Dropped two during model build for lack of impact
+- Model accounts for 70.9% of FSR variation using 8 laws only
+- Less accurate than initial manual regression but respectable
+
+
+Critical Law Variables Defined
+========================================================
+
+- __permith__: A license or permit is required to purchase handguns  
+- __opencarrypermith__: No open carry of handguns is allowed in public places unless the person has a concealed carry or handgun carry permit  
+- __capuses__: Criminal liability for negligent storage of guns if child uses or carries the gun	 
+- __mayissue__: "May issue" state (granting of cc permits at discretion of local authorities)  
+- __dealerh__: State dealer license required for handgun sales	
+- __ccrenewbackground__: Concealed carry permit renewal requires a new background check  
+- __permitconcealed__: Permit required to carry concealed weapons  
+- __recordsdealerh__: Record keeping and retention required for licensed dealers for handgun sales	
+
+
+Conclusions
+========================================================
+
+- Gun legislation makes a difference
+- Highly regulated states have guns but fewer gun suicides
+- Pursue laws most likely to effect the suicide problem
+- Rural states are at greatest risk for firearm suicides
+- Self-protection argument is illusory
+- Deeper modeling research of law impact would be valuable
+
+
+Data Sources
+========================================================
+
+- Suicide and homicide rates from [Centers for Disease Control and Prevention](https://wonder.cdc.gov/)
+- Gun ownership data from [Kalesan Injury Prevention article](http://injuryprevention.bmj.com/content/injuryprev/early/2015/06/09/injuryprev-2015-041586.full.pdf?keytype=ref&ijkey=doj6vx0laFZMsQ2)
+- Giffords Law Grades and Rankings from [Giffords Law Center](http://lawcenter.giffords.org/scorecard/)
+- State Firearm Law data from [Boston University School of Public Health](https://www.statefirearmlaws.org/table.html)
+- [Guns & Ammo Best States for Gun Owners](http://www.gunsandammo.com/network-topics/culture-politics-network/best-states-for-gun-owners-2015/)
+- Complete research paper available [here](https://github.com/datahoundz/Springboard_Data_Science/blob/master/07_Capstone_Report.md), source code and data available [here](https://github.com/datahoundz/Springboard_Data_Science)
+ 

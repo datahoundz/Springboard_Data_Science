@@ -799,7 +799,7 @@ hljs.initHighlightingOnLoad();
 <li>Frame issue relative to homicide deaths and overall suicide</li>
 <li>Explore potential impact of region, laws and ownership rates</li>
 <li>Develop regression model to predict gun suicides</li>
-<li>Use modeling to assess critical gun law interventions</li>
+<li>Use machine learning to assess critical gun law interventions</li>
 </ul>
 
 </div>
@@ -868,7 +868,7 @@ hljs.initHighlightingOnLoad();
 <ul>
 <li>Firearm suicides historically outpace homicides</li>
 <li>Sharp and steady rise in suicides since 2008</li>
-<li>Firearm homicides spiking recently</li>
+<li>Firearm homicides more stable but spiking recently</li>
 </ul>
 
 </div>
@@ -944,6 +944,8 @@ hljs.initHighlightingOnLoad();
 
 <div class="column column2 slideContent" >
 
+
+<p>Examples of Regional Divide</p>
 
 <ul>
 <li>Massachusetts vs Maine</li>
@@ -1043,8 +1045,8 @@ hljs.initHighlightingOnLoad();
 <div class="slideContent" >
 <ul>
 <li>Giffords Law Center Data for 2014-2016</li>
-<li>Grades &amp; Rankings show relation between weak laws and gun deaths</li>
-<li>Gun law rankings also display relation with firearm suicide rates</li>
+<li>Ratings show relation between weak laws and gun deaths</li>
+<li>Rankings also display relation with firearm suicide rates</li>
 <li>Data limited to three years impacting deeper exploration</li>
 </ul>
 
@@ -1089,7 +1091,7 @@ hljs.initHighlightingOnLoad();
 
 </section>
 <section data-transition="linear" data-transition-speed="default">
-<h3>Giffords F and Overall Suicide Rates</h3>
+<h3>F-Grade and Overall Suicide Rates</h3>
 <div class="column column1 slideContent" >
 <p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/osr_by_f_grade-1.png" alt="osr_by_f_grade"/></p>
 
@@ -1103,6 +1105,7 @@ hljs.initHighlightingOnLoad();
 <li>41 Above/Below Average rankings indicated by Giffords &ldquo;F&rdquo;</li>
 <li>21 &ldquo;Non-F&rdquo; states below average</li>
 <li>20 &ldquo;F&rdquo; states above average</li>
+<li>Clear prevalence of gun suicides in above average states</li>
 </ul>
 
 </div>
@@ -1220,8 +1223,24 @@ hljs.initHighlightingOnLoad();
 <li>Reduced gun law states averaged 2.42 increase in FSR</li>
 <li>Large increase states (10+ laws) saw only 0.47 increase</li>
 <li>5X difference in FSR change between two groups</li>
-<li>Changes occur as overall suicide rates rise across nation</li>
+<li>Changes occur amid rise in national suicide rates</li>
 </ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Mapping Law Change to FSR Change</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/map_law_chg.png" alt="map_law_chg"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/map_fsr_chg.png" alt="map_fsr_chg"/></p>
 
 </div>
 
@@ -1242,7 +1261,225 @@ hljs.initHighlightingOnLoad();
 <li>Missouri -10 gun laws, FSR rose by 3.0/100K</li>
 <li>Estimated 176 more Missouri suicides in 2016</li>
 <li>Estimated 183 lives saved in California</li>
-<li>39 saved lives in NY, 151 more SC deaths</li>
+<li>NY: 39 saved lives, SC: 151 more deaths</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Regression Model to Predict State FSR</h3>
+<div class="slideContent" >
+<p>VARIABLES OF INTEREST</p>
+
+<ul>
+<li>Gun Ownership Rate</li>
+<li>Firearm Laws</li>
+<li>Region</li>
+<li>Population Density</li>
+</ul>
+
+<p>POTENTIAL ISSUES</p>
+
+<ul>
+<li>Colinearity between variables</li>
+<li>Only one year of ownership rates</li>
+<li>Rising suicide rate </li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Training Data - 2013 Data Only</h3>
+<div class="slideContent" >
+<ul>
+<li>Ownership rate, buyer regulation laws and region West most effective variables</li>
+<li>Ownership rate has greatest impact on model performance but high error range</li>
+<li>Buyer regulations law category more conservative choice over total laws</li>
+<li>Population density strong predictor in isolation, not in combination</li>
+<li>Region = West outperformed all other regional variable options</li>
+<li>Model predicted 82.5% of variation in FSR on the 2013 training data</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Model Performance on Test Data</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/man_reg_ggplot.png" alt="man_reg_ggplot"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Model accounted for 77.3% of FSR variation in test data</li>
+<li>RMSE of 1.68 improved on train data performance</li>
+<li>Significant size difference in datasets likely cause of shifts</li>
+<li>Variation at high end of FSR range difficult to predict</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Random Forest Model: Law Categories Only</h3>
+<div class="slideContent" >
+<ul>
+<li>Random Forest machine learning technique for higher accuracy</li>
+<li>Inability to see how model achieves improved performance</li>
+<li>Run to explore possibility of using only law variables</li>
+<li>Higher risk of overfitting model to training data</li>
+<li>Train with 70% of data, test on 30%</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Random Forest Model Performance</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/rf_ggplot_test-1.png" alt="rf_ggplot_test"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Random Forest model outperformed manual regression</li>
+<li>Used only 14 law category variables</li>
+<li>Accounted for 90.4% of FSR variation</li>
+<li>RMSE of only 0.945</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Gradient Boost Model: All Law Variables</h3>
+<div class="slideContent" >
+<ul>
+<li>Gradient Boost machine learning technique similar to Random Forest</li>
+<li>Allows one to glimpse variable impact</li>
+<li>Apply using 132 individual law variables</li>
+<li>Assess law variables most likely to effect FSR levels</li>
+<li>Repeat 70/30 training vs test data split</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Gradient Boost Model Performance</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/gb_ggplot-1.png" alt="gb_ggplot"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Outperformed Random Forest law category model</li>
+<li>Accounted for 92.3% of variation in FSR</li>
+<li>RMSE even lower at 0.85</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Critical Variables in Model</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/crit_var_ggplot.png" alt="crit_var_ggplot"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Plot displays critical variables ranked by gain x cover</li>
+<li>Gain indicates improvement in model accuracy</li>
+<li>Cover indicates number of branches effected</li>
+<li>permith clearly stands out in ranking</li>
+<li>permith: A license or permit is required to purchase handguns</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Manual Regression Using Critical Laws</h3>
+<div class="column column1 slideContent" >
+<p><img src="https://raw.githubusercontent.com/datahoundz/Springboard_Data_Science/master/07_Capstone_Report_files/figure-markdown_github/gb_man_ggplot-1.png" alt="gb_man_ggplot"/></p>
+
+
+</div>
+
+<div class="column column2 slideContent" >
+
+
+<ul>
+<li>Built manual regression model using critical law variables</li>
+<li>Dropped two during model build for lack of impact</li>
+<li>Model accounts for 70.9% of FSR variation using 8 laws only</li>
+<li>Less accurate than initial manual regression but respectable</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Critical Law Variables Defined</h3>
+<div class="slideContent" >
+<ul>
+<li><strong>permith</strong>: A license or permit is required to purchase handguns<br/></li>
+<li><strong>opencarrypermith</strong>: No open carry of handguns is allowed in public places unless the person has a concealed carry or handgun carry permit<br/></li>
+<li><strong>capuses</strong>: Criminal liability for negligent storage of guns if child uses or carries the gun<br/></li>
+<li><strong>mayissue</strong>: &ldquo;May issue&rdquo; state (granting of cc permits at discretion of local authorities)<br/></li>
+<li><strong>dealerh</strong>: State dealer license required for handgun sales<br/></li>
+<li><strong>ccrenewbackground</strong>: Concealed carry permit renewal requires a new background check<br/></li>
+<li><strong>permitconcealed</strong>: Permit required to carry concealed weapons<br/></li>
+<li><strong>recordsdealerh</strong>: Record keeping and retention required for licensed dealers for handgun sales<br/></li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Conclusions</h3>
+<div class="slideContent" >
+<ul>
+<li>Gun legislation makes a difference</li>
+<li>Highly regulated states have guns but fewer gun suicides</li>
+<li>Pursue laws most likely to effect the suicide problem</li>
+<li>Rural states are at greatest risk for firearm suicides</li>
+<li>Self-protection argument is illusory</li>
+<li>Deeper modeling research of law impact would be valuable</li>
+</ul>
+
+</div>
+
+</section>
+<section data-transition="linear" data-transition-speed="default">
+<h3>Data Sources</h3>
+<div class="slideContent" >
+<ul>
+<li>Suicide and homicide rates from <a href="https://wonder.cdc.gov/">Centers for Disease Control and Prevention</a></li>
+<li>Gun ownership data from <a href="http://injuryprevention.bmj.com/content/injuryprev/early/2015/06/09/injuryprev-2015-041586.full.pdf?keytype=ref&amp;ijkey=doj6vx0laFZMsQ2">Kalesan Injury Prevention article</a></li>
+<li>Giffords Law Grades and Rankings from <a href="http://lawcenter.giffords.org/scorecard/">Giffords Law Center</a></li>
+<li>State Firearm Law data from <a href="https://www.statefirearmlaws.org/table.html">Boston University School of Public Health</a></li>
+<li><a href="http://www.gunsandammo.com/network-topics/culture-politics-network/best-states-for-gun-owners-2015/">Guns &amp; Ammo Best States for Gun Owners</a></li>
+<li>Complete research paper available <a href="https://github.com/datahoundz/Springboard_Data_Science/blob/master/07_Capstone_Report.md">here</a>, source code and data available <a href="https://github.com/datahoundz/Springboard_Data_Science">here</a></li>
 </ul>
 
 </div>
