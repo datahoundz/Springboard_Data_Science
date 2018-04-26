@@ -129,6 +129,20 @@ test_df$predict <- predict(mod2, test_df)
 cor(test_df$predict, test_df$gun_rate)^2
 sqrt(mean((test_df$predict - test_df$gun_rate)^2))
 
+# Plot Predictions vs Actuals
+test_df %>%
+  ggplot(aes(x = predict, y = gun_rate, label = usps_st, color = reg_code)) + 
+  geom_text() + 
+  geom_abline() +
+  expand_limits(y = 0, x = 0) +
+  ylab("Actual Observed Firearm Suicide Rate") +
+  xlab("Predicted Firearm Suicide Rate") +
+  labs(color = "Region Code") +
+  labs(title = "Manual Regression Model Results", 
+       subtitle = "Predicted FSR Levels vs Observed FSR Levels") +
+  labs(caption = "Predictions of FSR based upon Ownership Rate, Buyer Regulation laws and Region = West") +
+  theme(legend.position = "right")
+
 # Residual & Q-Q Plot
 plot(test2, which = c(1, 2))
 
@@ -652,9 +666,10 @@ gb_all_df <- sui_method_df %>%
 
 
 # Split into train & test data sets at 70/30 ratio
-gp <- runif(nrow(gb_all_df))
-gb_all_train <- gb_all_df[gp < 0.70, ]
-gb_all_test <- gb_all_df[gp >= 0.70, ]
+set.seed(123) 
+sample <- sample.int(n = nrow(gb_all_df), size = floor(0.70 * nrow(gb_all_df)), replace = F)
+gb_all_train <- gb_all_df[sample, ]
+gb_all_test  <- gb_all_df[-sample, ]
 dim(gb_all_train)
 dim(gb_all_test)
 
@@ -713,7 +728,7 @@ eval_log %>%
 
 gb_all_model <- xgboost(data = as.matrix(gb_all_train_treat),
                         label = gb_all_train$fsr,
-                        nrounds = 25,         # Enter number of trees from above
+                        nrounds = 26,         # Enter number of trees from above
                         objective = "reg:linear",
                         eta = 0.3,
                         depth = 6,
@@ -733,7 +748,7 @@ gb_all_test %>%
 # Check r2 and RMSE
 cor(gb_all_test$pred, gb_all_test$fsr)^2
 sqrt(mean((gb_all_test$pred - gb_all_test$fsr)^2))
-# r2 = 0.869, RMSE = 1.01
+# r2 = 0.923, RMSE = 0.85
 
 GainCurvePlot(gb_all_test, "pred", "fsr", "Gradient Boost Model")
 
@@ -742,33 +757,42 @@ GainCurvePlot(gb_all_test, "pred", "fsr", "Gradient Boost Model")
 importance_table <- xgb.importance(feature_names = law_vars, model = gb_all_model)
 importance_table %>%
   mutate(gain_cover = Gain * Cover) %>%
-  arrange(desc(gain_cover))
+  arrange(desc(gain_cover)) %>%
+  head(n = 10) %>%
+  ggplot(aes(x = reorder(Feature, gain_cover), y = gain_cover, fill = Gain)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  ylab("Score on Gain x Cover Calculation") +
+  xlab("Firearm Law Variable") +
+  labs(fil = "Gain Score") +
+  labs(title = "Critical Variables from Gradient Boost Model", 
+       subtitle = "Sorted by Modified Gain x Cover Score") +
+  labs(caption = "Selected top 10 ranking law variables only") +
+  theme(legend.position = "right")
 
 xgb.plot.importance(importance_matrix = importance_table[1:20, ])
-
-# TOP 20 Variables from ALL Gun Law Gradient Boost, Sorted by Gain X Cover
-#                     Feature        Gain     Cover Frequency   gain x cover
-# 1                    permith 0.513099722 0.0513600   0.03048 0.026352811759
-# 2           opencarrypermith 0.092291587 0.0338146   0.03165 0.003120803295
-# 3                    capuses 0.092795690 0.0327936   0.00938 0.003043106284
-# 4                   mayissue 0.028705073 0.0414387   0.01758 0.001189500957
-# 5            permitconcealed 0.030005186 0.0346469   0.02462 0.001039587493
-# 6             recordsdealerh 0.022693306 0.0389861   0.02345 0.000884723864
-# 7          ccrenewbackground 0.012622745 0.0503945   0.03048 0.000636117178
-# 8            incidentremoval 0.015991925 0.0335150   0.03048 0.000535968797
-# 9                   immunity 0.017006658 0.0276221   0.02696 0.000469759631
-# 10                elementary 0.017493518 0.0251695   0.03986 0.000440303389
-# 11                     nosyg 0.008450914 0.0495511   0.03869 0.000418752101
-# 12                    felony 0.009452476 0.0342363   0.03400 0.000323617923
-# 13           drugmisdemeanor 0.029204542 0.0089891   0.00586 0.000262522936
-# 14          ccbackgroundnics 0.005354246 0.0477977   0.03048 0.000255920493
-# 15              alctreatment 0.008287328 0.0302079   0.02931 0.000250342453
-# 16                   dealerh 0.016752739 0.0145934   0.02462 0.000244480031
-# 17            violentpartial 0.006508868 0.0311845   0.01172 0.000202975493
-# 18             invcommitment 0.005492532 0.0277109   0.03400 0.000152202910
-# 19                   college 0.003634808 0.0352573   0.02579 0.000128153509
-# 20    traffickingprohibitedh 0.009773109 0.0128511   0.00938 0.000125595231
-
+ 
+#                  Feature    Gain   Cover Frequency gain_cover
+# 1                permith 0.45154 0.03427    0.0220   0.015474
+# 2       opencarrypermith 0.09712 0.03901    0.0242   0.003789
+# 3                capuses 0.09108 0.03154    0.0132   0.002873
+# 4               mayissue 0.05477 0.02582    0.0198   0.001414
+# 5                dealerh 0.03442 0.02286    0.0264   0.000787
+# 6      ccrenewbackground 0.01372 0.05443    0.0319   0.000747
+# 7        permitconcealed 0.02046 0.02928    0.0242   0.000599
+# 8                 felony 0.00855 0.05281    0.0352   0.000451
+# 9         recordsdealerh 0.02133 0.01954    0.0319   0.000417
+# 10      age18longgunsale 0.00866 0.04003    0.0308   0.000346
+# 11                 nosyg 0.00676 0.04646    0.0407   0.000314
+# 12 traffickingprohibited 0.02240 0.01312    0.0077   0.000294
+# 13              immunity 0.00942 0.03089    0.0396   0.000291
+# 14               college 0.00681 0.04179    0.0187   0.000285
+# 15      ccbackgroundnics 0.00908 0.02941    0.0407   0.000267
+# 16          alctreatment 0.00935 0.02851    0.0286   0.000267
+# 17       incidentremoval 0.01193 0.02100    0.0253   0.000251
+# 18            elementary 0.02546 0.00778    0.0242   0.000198
+# 19         invcommitment 0.00881 0.02232    0.0319   0.000197
+# 20   age18longgunpossess 0.00627 0.01903    0.0165   0.000119
 #==============================================================
 # 
 # Takeaways from gradient boost importance plot for specific laws
